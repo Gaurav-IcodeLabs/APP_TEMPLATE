@@ -10,11 +10,12 @@ declare module 'react-native-config' {
     MARKETPLACE_ROOT_URL?: string;
     STRIPE_PUBLISHABLE_KEY?: string;
     MAPBOX_ACCESS_TOKEN?: string;
+    GOOGLE_MAPS_API_KEY?: string;
+    FACEBOOK_APP_ID?: string;
     APP_ENV?: string;
     SDK_BASE_URL?: string;
     REACT_NATIVE_SDK_BASE_URL?: string;
     SENTRY_DSN?: string;
-    MONGO_URL?: string;
   }
 
   export const Config: NativeConfig;

@@ -15,4 +15,6 @@ export const ENV = {
   SDK_BASE_URL: Config.SDK_BASE_URL || '',
   REACT_NATIVE_SDK_BASE_URL: Config.REACT_NATIVE_SDK_BASE_URL || '',
   SENTRY_DSN: Config.SENTRY_DSN || '',
+  GOOGLE_MAPS_API_KEY: Config.GOOGLE_MAPS_API_KEY || '',
+  FACEBOOK_APP_ID: Config.FACEBOOK_APP_ID || '',
 };
