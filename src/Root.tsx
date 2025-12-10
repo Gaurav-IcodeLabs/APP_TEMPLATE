@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Text, View } from 'react-native';
-import { store } from './redux/store';
-import { fetchAppAssets } from './redux/slices/hostedAssets.slice';
+import { Text } from 'react-native';
 import { colors, mergeColors } from './constants';
 import { ConfigurationProvider } from './context/configurationContext';
+import { fetchAppAssets } from './redux/slices/hostedAssets.slice';
+import { store } from './redux/store';
 
 interface AppConfig {
   appConfig: any;
@@ -11,7 +11,6 @@ interface AppConfig {
 }
 
 const Root = () => {
-  const [isReady, setIsReady] = useState(false);
   const [config, setConfig] = useState<AppConfig | null>(null);
 
   const initializeApp = useCallback(async () => {
@@ -33,8 +32,6 @@ const Root = () => {
           colors: mergeColors(res.appConfig.branding || {}),
         });
       }
-
-      setIsReady(true);
     } catch (error) {
       console.error('App initialization failed:', error);
       // Fallback to default config if fetch fails
@@ -42,7 +39,6 @@ const Root = () => {
         appConfig: {},
         colors: colors,
       });
-      setIsReady(true);
     }
   }, []);
 

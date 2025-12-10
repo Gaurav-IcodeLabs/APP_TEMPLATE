@@ -15,6 +15,7 @@ declare module 'react-native-config' {
     REACT_NATIVE_SDK_BASE_URL?: string;
     SENTRY_DSN?: string;
     MONGO_URL?: string;
+    DEV_API_SERVER_PORT?: string;
   }
 
   export const Config: NativeConfig;

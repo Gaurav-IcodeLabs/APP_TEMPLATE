@@ -3,14 +3,15 @@ import { persistReducer, persistStore } from 'redux-persist';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createInstance } from 'sharetribe-flex-sdk';
 import { TypedUseSelectorHook, useDispatch, useSelector } from 'react-redux';
-import { ENV } from '../constants';
 import rootReducer from './rootReducer';
 import sharetribeTokenStore from './sharetribeTokenStore';
+import appSettings from '../config/settings';
+import { ENV } from '../constants';
 
 export const sdk = createInstance({
-  clientId: ENV.SHARETRIBE_SDK_CLIENT_ID,
+  clientId: appSettings.sdk.clientId,
   tokenStore: sharetribeTokenStore({
-    clientId: ENV.SHARETRIBE_SDK_CLIENT_ID,
+    clientId: appSettings.sdk.clientId,
   }),
   clientSecret: ENV.SHARETRIBE_SDK_CLIENT_SECRET,
 });

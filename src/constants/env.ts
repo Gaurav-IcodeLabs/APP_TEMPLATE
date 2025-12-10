@@ -15,4 +15,5 @@ export const ENV = {
   SDK_BASE_URL: Config.SDK_BASE_URL || '',
   REACT_NATIVE_SDK_BASE_URL: Config.REACT_NATIVE_SDK_BASE_URL || '',
   SENTRY_DSN: Config.SENTRY_DSN || '',
+  DEV_API_SERVER_PORT: Config.DEV_API_SERVER_PORT || '',
 };
