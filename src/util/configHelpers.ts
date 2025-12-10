@@ -1429,7 +1429,7 @@ const mergeMapConfig = (hostedMapConfig, defaultMapConfig) => {
 ////////////////////////////////////
 
 // Check if all the mandatory info have been retrieved from hosted assets
-const hasMandatoryConfigs = hostedConfig => {
+const hasMandatoryConfigs = (hostedConfig) => {
   const { branding, listingTypes, listingFields, transactionSize } = hostedConfig;
   printErrorIfHostedAssetIsMissing({ branding, listingTypes, listingFields, transactionSize });
   return (

@@ -16,6 +16,8 @@ declare module 'react-native-config' {
     SENTRY_DSN?: string;
     MONGO_URL?: string;
     DEV_API_SERVER_PORT?: string;
+    FACEBOOK_APP_ID?: string;
+    GOOGLE_MAPS_API_KEY?: string;
   }
 
   export const Config: NativeConfig;
