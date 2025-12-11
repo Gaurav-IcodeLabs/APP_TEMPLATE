@@ -1,9 +1,14 @@
-import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse, AxiosError } from 'axios';
-import { types as sdkTypes, transit } from './sdkLoader';
+import axios, {
+  AxiosError,
+  AxiosInstance,
+  AxiosRequestConfig,
+  AxiosResponse,
+} from 'axios';
 import Decimal from 'decimal.js';
 import appSettings from '../config/settings';
 import { ENV } from '../constants';
-import { ApiError } from '../types';
+import { ApiErrorData } from '../types/api/api.types';
+import { types as sdkTypes, transit } from './sdkLoader';
 
 /**
  * Type handler configuration for SDK types
@@ -18,7 +23,8 @@ interface TypeHandler {
 /**
  * API request options extending Axios config
  */
-interface ApiRequestOptions extends Omit<AxiosRequestConfig, 'url' | 'method' | 'data'> {
+interface ApiRequestOptions
+  extends Omit<AxiosRequestConfig, 'url' | 'method' | 'data'> {
   body?: any;
   method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 }
@@ -42,7 +48,9 @@ export const apiBaseUrl = (marketplaceRootURL?: string): string => {
   }
 
   // Otherwise, use the provided marketplace URL or default
-  return marketplaceRootURL ? marketplaceRootURL.replace(/\/$/, '') : ENV.API_URL;
+  return marketplaceRootURL
+    ? marketplaceRootURL.replace(/\/$/, '')
+    : ENV.API_URL;
 };
 
 /**
@@ -90,9 +98,11 @@ const createApiClient = (): AxiosInstance => {
 
   // Request interceptor - serialize body if needed
   instance.interceptors.request.use(
-    (config) => {
-      const contentType = config.headers?.['Content-Type'] as string | undefined;
-      
+    config => {
+      const contentType = config.headers?.['Content-Type'] as
+        | string
+        | undefined;
+
       // Serialize body if content type is transit+json and body exists
       if (
         contentType === 'application/transit+json' &&
@@ -101,24 +111,29 @@ const createApiClient = (): AxiosInstance => {
       ) {
         config.data = serialize(config.data);
         // Ensure we're sending as text, not JSON
-        config.transformRequest = [(data) => data];
+        config.transformRequest = [data => data];
       }
 
       return config;
     },
     (error: AxiosError) => {
       return Promise.reject(error);
-    }
+    },
   );
 
   // Response interceptor - deserialize response if needed
   instance.interceptors.response.use(
     (response: AxiosResponse) => {
-      const contentType = response.headers['content-type'] as string | undefined;
+      const contentType = response.headers['content-type'] as
+        | string
+        | undefined;
       const actualContentType = contentType ? contentType.split(';')[0] : null;
 
       // Deserialize transit responses
-      if (actualContentType === 'application/transit+json' && typeof response.data === 'string') {
+      if (
+        actualContentType === 'application/transit+json' &&
+        typeof response.data === 'string'
+      ) {
         response.data = deserialize(response.data);
       }
       // JSON responses are already parsed by Axios
@@ -130,15 +145,22 @@ const createApiClient = (): AxiosInstance => {
       // Handle error responses
       if (error.response) {
         const statusCode = error.response.status;
-        
+
         if (statusCode >= 400) {
-          const contentType = error.response.headers['content-type'] as string | undefined;
-          const actualContentType = contentType ? contentType.split(';')[0] : null;
-          
+          const contentType = error.response.headers['content-type'] as
+            | string
+            | undefined;
+          const actualContentType = contentType
+            ? contentType.split(';')[0]
+            : null;
+
           let errorData: any = error.response.data;
-          
+
           // Handle different content types in error responses
-          if (actualContentType === 'application/transit+json' && typeof errorData === 'string') {
+          if (
+            actualContentType === 'application/transit+json' &&
+            typeof errorData === 'string'
+          ) {
             errorData = deserialize(errorData);
           } else if (actualContentType === 'application/json') {
             // Axios already parses JSON, so errorData is already an object
@@ -153,16 +175,18 @@ const createApiClient = (): AxiosInstance => {
             }
           }
           // For plain text or other types, errorData remains as is
-          
+
           // Create error object similar to original implementation
-          const apiError = new Error(errorData?.message || 'API Error') as unknown as ApiError;
+          const apiError = new Error(
+            errorData?.message || 'API Error',
+          ) as unknown as ApiErrorData;
           Object.assign(apiError, errorData);
           return Promise.reject(apiError);
         }
       }
-      
+
       return Promise.reject(error);
-    }
+    },
   );
 
   return instance;
@@ -179,7 +203,7 @@ const apiClient: AxiosInstance = createApiClient();
  */
 export const request = async <T = any>(
   path: string,
-  options: ApiRequestOptions = {}
+  options: ApiRequestOptions = {},
 ): Promise<T> => {
   const { body, headers, method = 'GET', ...rest } = options;
 
@@ -208,7 +232,7 @@ export const request = async <T = any>(
 export const post = <T = any>(
   path: string,
   body?: any,
-  options: ApiRequestOptions = {}
+  options: ApiRequestOptions = {},
 ): Promise<T> => {
   return request<T>(path, {
     ...options,
@@ -225,7 +249,7 @@ export const post = <T = any>(
  */
 export const get = <T = any>(
   path: string,
-  options: ApiRequestOptions = {}
+  options: ApiRequestOptions = {},
 ): Promise<T> => {
   return request<T>(path, {
     ...options,
@@ -243,7 +267,7 @@ export const get = <T = any>(
 export const put = <T = any>(
   path: string,
   body?: any,
-  options: ApiRequestOptions = {}
+  options: ApiRequestOptions = {},
 ): Promise<T> => {
   return request<T>(path, {
     ...options,
@@ -262,7 +286,7 @@ export const put = <T = any>(
 export const patch = <T = any>(
   path: string,
   body?: any,
-  options: ApiRequestOptions = {}
+  options: ApiRequestOptions = {},
 ): Promise<T> => {
   return request<T>(path, {
     ...options,
@@ -279,7 +303,7 @@ export const patch = <T = any>(
  */
 export const del = <T = any>(
   path: string,
-  options: ApiRequestOptions = {}
+  options: ApiRequestOptions = {},
 ): Promise<T> => {
   return request<T>(path, {
     ...options,

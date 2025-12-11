@@ -13,8 +13,9 @@ export interface Image {
 export interface ImageAsset {
   id: string;
   type: 'imageAsset';
-  attributes?: {
+  attributes: {
     variants?: Record<string, ImageVariant>;
+    assetPath: string;
   };
 }
 
@@ -22,4 +23,5 @@ export interface ImageVariant {
   width: number;
   height: number;
   url: string;
+  name?: string;
 }

@@ -20,7 +20,8 @@ const Root = () => {
       //   await i18n.init();
       // }
 
-      const res: any = await store.dispatch(fetchAppAssets()).unwrap();
+      const res = await store.dispatch(fetchAppAssets()).unwrap();
+      // console.log('res', JSON.stringify(res, null, 2))
       if (res.appConfig) {
         // i18n.addResourceBundle(
         //   'en',

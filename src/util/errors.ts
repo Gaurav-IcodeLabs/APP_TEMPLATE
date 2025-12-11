@@ -32,133 +32,182 @@ import {
   ERROR_CODE_PERMISSION_DENIED_INITIATE_TRANSACTIONS,
   ERROR_CODE_PERMISSION_DENIED_READ,
 } from '../constants';
+import { ApiErrorDetail, ApiErrorResponse, StorableError } from '../types/api/api.types';
 // NOTE: This file imports types.js, which may lead to circular dependency
 
-const errorAPIErrors = error => {
+/**
+ * Extract API errors from error.apiErrors (SDK format)
+ */
+const errorAPIErrors = (error: StorableError | null | undefined) => {
   return error && error.apiErrors ? error.apiErrors : [];
 };
 
-const hasErrorWithCode = (error, code) => {
-  return errorAPIErrors(error).some(apiError => {
-    return apiError.code === code;
-  });
+/**
+ * Check if error has a specific error code
+ */
+const hasErrorWithCode = (error: StorableError | null | undefined, code: string): boolean => {
+  return errorAPIErrors(error).some(apiError => apiError.code === code);
 };
 
 /**
- * return apiErrors from error response
+ * Extract API errors from error.data.errors (response format)
  */
-const responseAPIErrors = error => {
+const responseAPIErrors = (error: ApiErrorResponse | null | undefined): ApiErrorDetail[] => {
   return error && error.data && error.data.errors ? error.data.errors : [];
 };
+
+// ============================================================================
+// General Error Checks
+// ============================================================================
 
 /**
  * 403 Forbidden
  */
-export const isForbiddenError = error =>
+export const isForbiddenError = (error: StorableError | null | undefined): boolean =>
   hasErrorWithCode(error, ERROR_CODE_FORBIDDEN);
 
 /**
  * 404 Not Found
  */
-export const isNotFoundError = error =>
+export const isNotFoundError = (error: StorableError | null | undefined): boolean =>
   hasErrorWithCode(error, ERROR_CODE_NOT_FOUND);
 
 /**
  * 429 Too Many Requests error
  */
-export const isTooManyRequestsError = error => error && error.status === 429;
+export const isTooManyRequestsError = (error: StorableError | null | undefined): boolean =>
+  !!(error && error.status === 429);
+
+// ============================================================================
+// User Account Error Checks
+// ============================================================================
 
 /**
  * Check if the given API error (from `sdk.currentuser.create()`) is
  * due to the email address already being in use.
  */
-export const isSignupEmailTakenError = error =>
+export const isSignupEmailTakenError = (error: StorableError | null | undefined): boolean =>
   hasErrorWithCode(error, ERROR_CODE_EMAIL_TAKEN);
 
 /**
  * Check if the given API error (from `sdk.currentuser.changeEmail()`) is
  * due to the email address already being in use.
  */
-export const isChangeEmailTakenError = error =>
+export const isChangeEmailTakenError = (error: StorableError | null | undefined): boolean =>
   hasErrorWithCode(error, ERROR_CODE_EMAIL_TAKEN);
+
+/**
+ * Check if the given API error (from `sdk.currentUser.changeEmail(params)`)
+ * is due to giving wrong password.
+ */
+export const isChangeEmailWrongPassword = (error: StorableError | null | undefined): boolean =>
+  !!(error && error.status === 403);
+
+/**
+ * Check if the given API error (from `sdk.currentUser.changePassword(params)`)
+ * is due to giving wrong password.
+ */
+export const isChangePasswordWrongPassword = (error: StorableError | null | undefined): boolean =>
+  !!(error && error.status === 403);
 
 /**
  * Check if the given API error (from
  * `sdk.currentUser.sendVerificationEmail()`) is due to too many
  * active email verification requests.
  *
- * There qre only a specific amount of active verification requests
+ * There are only a specific amount of active verification requests
  * allowed, and the user has to wait for them to expire to be able to
  * request sending new verification emails.
  */
-export const isTooManyEmailVerificationRequestsError = error =>
-  hasErrorWithCode(error, ERROR_CODE_TOO_MANY_VERIFICATION_REQUESTS);
+export const isTooManyEmailVerificationRequestsError = (
+  error: StorableError | null | undefined
+): boolean => hasErrorWithCode(error, ERROR_CODE_TOO_MANY_VERIFICATION_REQUESTS);
+
+/**
+ * Check if the given API error (from `sdk.passwordReset.request()`)
+ * is due to no user having the given email address.
+ */
+export const isPasswordRecoveryEmailNotFoundError = (
+  error: StorableError | null | undefined
+): boolean => hasErrorWithCode(error, ERROR_CODE_EMAIL_NOT_FOUND);
+
+// ============================================================================
+// Upload Error Checks
+// ============================================================================
 
 /**
  * Check if the given API error (from
  * `sdk.images.upload()`) is due to the image being over
  * the size limit.
  */
-export const isUploadImageOverLimitError = error =>
+export const isUploadImageOverLimitError = (error: StorableError | null | undefined): boolean =>
   hasErrorWithCode(error, ERROR_CODE_UPLOAD_OVER_LIMIT);
+
+// ============================================================================
+// Stock Management Error Checks
+// ============================================================================
 
 /**
  * Check if the given API error (from
  * `sdk.stock.compareAndSet()`) is due to the oldTotal being wrong.
  */
-export const isOldTotalMismatchStockError = error =>
+export const isOldTotalMismatchStockError = (error: StorableError | null | undefined): boolean =>
   hasErrorWithCode(error, ERROR_CODE_STOCK_OLD_TOTAL_MISMATCH);
 
-/**
- * Check if the given API error (from `sdk.passwordReset.request()`)
- * is due to no user having the given email address.
- */
-export const isPasswordRecoveryEmailNotFoundError = error =>
-  hasErrorWithCode(error, ERROR_CODE_EMAIL_NOT_FOUND);
+// ============================================================================
+// Transaction Initiation Error Checks
+// ============================================================================
 
 /**
  * Check if the given API error (from `sdk.transaction.initiate()` or
  * `sdk.transaction.initiateSpeculative()`) is due to the listing
  * being closed or deleted.
  */
-export const isTransactionInitiateListingNotFoundError = error =>
-  hasErrorWithCode(error, ERROR_CODE_TRANSACTION_LISTING_NOT_FOUND);
+export const isTransactionInitiateListingNotFoundError = (
+  error: StorableError | null | undefined
+): boolean => hasErrorWithCode(error, ERROR_CODE_TRANSACTION_LISTING_NOT_FOUND);
 
 /**
  * Check if the given API error (from `sdk.transaction.initiate()` or
- * `sdk.transaction.initiateSpeculative()`) is due to missign Stripe
+ * `sdk.transaction.initiateSpeculative()`) is due to missing Stripe
  * connection from the listing author.
  */
-export const isTransactionInitiateMissingStripeAccountError = error =>
-  hasErrorWithCode(error, ERROR_CODE_MISSING_STRIPE_ACCOUNT);
+export const isTransactionInitiateMissingStripeAccountError = (
+  error: StorableError | null | undefined
+): boolean => hasErrorWithCode(error, ERROR_CODE_MISSING_STRIPE_ACCOUNT);
 
 /**
  * Check if the given API error (from `sdk.transaction.initiate()` or
  * `sdk.transaction.initiateSpeculative()`) is due to selected booking
  * time already being booked.
  */
-export const isTransactionInitiateBookingTimeNotAvailableError = error =>
-  hasErrorWithCode(error, ERROR_CODE_TRANSACTION_BOOKING_TIME_NOT_AVAILABLE);
+export const isTransactionInitiateBookingTimeNotAvailableError = (
+  error: StorableError | null | undefined
+): boolean => hasErrorWithCode(error, ERROR_CODE_TRANSACTION_BOOKING_TIME_NOT_AVAILABLE);
 
 /**
  * Check if the given API error (from `sdk.transaction.initiate()` or
  * `sdk.transaction.initiateSpeculative()`) is due to insufficient stock.
  */
-export const isTransactionInitiateListingInsufficientStockError = error =>
-  hasErrorWithCode(error, ERROR_CODE_TRANSACTION_LISTING_INSUFFICIENT_STOCK);
+export const isTransactionInitiateListingInsufficientStockError = (
+  error: StorableError | null | undefined
+): boolean => hasErrorWithCode(error, ERROR_CODE_TRANSACTION_LISTING_INSUFFICIENT_STOCK);
 
 /**
  * Check if the given API error (from `sdk.transaction.initiate()` or
  * `sdk.transaction.initiateSpeculative()`) is due to payment being zero.
  */
-export const isTransactionZeroPaymentError = error =>
-  hasErrorWithCode(error, ERROR_CODE_CHARGE_ZERO_PAYIN);
+export const isTransactionZeroPaymentError = (
+  error: StorableError | null | undefined
+): boolean => hasErrorWithCode(error, ERROR_CODE_CHARGE_ZERO_PAYIN);
 
 /**
  * Check if the given API error (from `sdk.transaction.initiate()`) is
  * due to the transaction total amount being too low for Stripe.
  */
-export const isTransactionInitiateAmountTooLowError = error => {
+export const isTransactionInitiateAmountTooLowError = (
+  error: StorableError | null | undefined
+): boolean => {
   const isZeroPayment = isTransactionZeroPaymentError(error);
 
   const tooLowAmount = errorAPIErrors(error).some(apiError => {
@@ -169,11 +218,13 @@ export const isTransactionInitiateAmountTooLowError = error => {
     try {
       // TODO: This is a temporary solution until a proper error code
       // for this specific error is received in the response.
-      const msg = apiError.meta.stripeMessage;
+      const msg = (apiError as any)?.meta?.stripeMessage;
       isAmountTooLow =
-        msg.startsWith('Amount must be at least') ||
-        msg.startsWith('Amount must convert to at least');
+        !!msg &&
+        (msg.startsWith('Amount must be at least') ||
+          msg.startsWith('Amount must convert to at least'));
     } catch (e) {
+      e;
       // Ignore
     }
 
@@ -187,18 +238,22 @@ export const isTransactionInitiateAmountTooLowError = error => {
  * Check if the given API error (from `sdk.transaction.initiate()`) is
  * due to the transaction charge creation disabled by Stripe.
  */
-export const isTransactionChargeDisabledError = error => {
+export const isTransactionChargeDisabledError = (
+  error: StorableError | null | undefined
+): boolean => {
   const chargeCreationDisabled = errorAPIErrors(error).some(apiError => {
     const isPaymentFailedError =
       apiError.status === 402 && apiError.code === ERROR_CODE_PAYMENT_FAILED;
 
     let isChargeCreationDisabled = false;
     try {
-      const msg = apiError.meta.stripeMessage;
+      const msg = (apiError as any)?.meta?.stripeMessage;
       isChargeCreationDisabled =
-        msg.startsWith('Your account cannot currently make charges.') ||
-        msg.match(/verification.disabled_reason/);
+        !!msg &&
+        (msg.startsWith('Your account cannot currently make charges.') ||
+          !!msg.match(/verification.disabled_reason/));
     } catch (e) {
+      e;
       // Ignore
     }
 
@@ -212,16 +267,17 @@ export const isTransactionChargeDisabledError = error => {
  * Check if the given API error (from `sdk.transaction.initiate()`) is
  * due to other error in Stripe.
  */
-export const transactionInitiateOrderStripeErrors = error => {
+export const transactionInitiateOrderStripeErrors = (
+  error: StorableError | null | undefined
+): string[] | null => {
   if (error) {
-    return errorAPIErrors(error).reduce((messages, apiError) => {
+    return errorAPIErrors(error).reduce((messages: string[], apiError) => {
       const isPaymentFailedError =
         apiError.status === 402 && apiError.code === ERROR_CODE_PAYMENT_FAILED;
-      const hasStripeError =
-        apiError && apiError.meta && apiError.meta.stripeMessage;
+      const hasStripeError = !!((apiError as any)?.meta?.stripeMessage);
       const stripeMessageMaybe =
-        isPaymentFailedError && hasStripeError
-          ? [apiError.meta.stripeMessage]
+        isPaymentFailedError && hasStripeError && (apiError as any)?.meta?.stripeMessage
+          ? [(apiError as any)?.meta?.stripeMessage]
           : [];
       return [...messages, ...stripeMessageMaybe];
     }, []);
@@ -229,167 +285,205 @@ export const transactionInitiateOrderStripeErrors = error => {
   return null;
 };
 
+// ============================================================================
+// Transaction Transition Error Checks
+// ============================================================================
+
 /**
  * Check if the given API error (from `sdk.transactions.transition(id, transition, params)`)
  * is due to invalid transition attempt.
  */
-export const isTransactionsTransitionInvalidTransition = error =>
-  error &&
-  error.status === 409 &&
-  hasErrorWithCode(error, ERROR_CODE_TRANSACTION_INVALID_TRANSITION);
+export const isTransactionsTransitionInvalidTransition = (
+  error: StorableError | null | undefined
+): boolean =>
+  !!(
+    error &&
+    error.status === 409 &&
+    hasErrorWithCode(error, ERROR_CODE_TRANSACTION_INVALID_TRANSITION)
+  );
 
 /**
  * Check if the given API error (from `sdk.transactions.transition(id, transition, params)`)
  * is due to already sent review.
  */
-export const isTransactionsTransitionAlreadyReviewed = error =>
-  error &&
-  error.status === 409 &&
-  (hasErrorWithCode(
-    error,
-    ERROR_CODE_TRANSACTION_ALREADY_REVIEWED_BY_CUSTOMER,
-  ) ||
-    hasErrorWithCode(
-      error,
-      ERROR_CODE_TRANSACTION_ALREADY_REVIEWED_BY_PROVIDER,
-    ));
+export const isTransactionsTransitionAlreadyReviewed = (
+  error: StorableError | null | undefined
+): boolean =>
+  !!(
+    error &&
+    error.status === 409 &&
+    (hasErrorWithCode(error, ERROR_CODE_TRANSACTION_ALREADY_REVIEWED_BY_CUSTOMER) ||
+      hasErrorWithCode(error, ERROR_CODE_TRANSACTION_ALREADY_REVIEWED_BY_PROVIDER))
+  );
 
 /**
- * Check if the given API error (from `sdk.currentUser.changeEmail(params)`)
- * is due to giving wrong password.
+ * Check if the given transition error is
+ * due to no quantity information in the transition params.
  */
-export const isChangeEmailWrongPassword = error =>
-  error && error.status === 403;
+export const isTransitionQuantityInfoMissingError = (
+  error: StorableError | null | undefined
+): boolean =>
+  !!(
+    error?.status === 400 &&
+    error?.statusText?.startsWith('Error: transition should contain quantity information')
+  );
 
-/**
- * Check if the given API error (from `sdk.currentUser.changePassword(params)`)
- * is due to giving wrong password.
- */
-export const isChangePasswordWrongPassword = error =>
-  error && error.status === 403;
+// ============================================================================
+// Listing Permission Error Checks
+// ============================================================================
 
 /**
  * Check if the given API error (from `sdk.listings.open(params)` or `sdk.listings.publish(params)`)
  * is due to denied permission to post listings.
  */
-export const isErrorNoPermissionToPostListings = error =>
-  error &&
-  error.status === 403 &&
-  hasErrorWithCode(error, ERROR_CODE_PERMISSION_DENIED_POST_LISTINGS);
+export const isErrorNoPermissionToPostListings = (
+  error: StorableError | null | undefined
+): boolean =>
+  !!(
+    error &&
+    error.status === 403 &&
+    hasErrorWithCode(error, ERROR_CODE_PERMISSION_DENIED_POST_LISTINGS)
+  );
 
 /**
  * Check if the given API error (from `sdk.transactions.initiate(params)`
  * is due to denied permission for users in pending-approval state.
  */
-export const isErrorNoPermissionForUserPendingApproval = error =>
-  error &&
-  error.status === 403 &&
-  hasErrorWithCode(error, ERROR_CODE_PERMISSION_DENIED_PENDING_APPROVAL);
+export const isErrorNoPermissionForUserPendingApproval = (
+  error: StorableError | null | undefined
+): boolean =>
+  !!(
+    error &&
+    error.status === 403 &&
+    hasErrorWithCode(error, ERROR_CODE_PERMISSION_DENIED_PENDING_APPROVAL)
+  );
 
 /**
  * Check if the given API error (from `sdk.listings.query(params)`
  * is due to denied permission for users in pending-approval state.
  */
-export const isErrorUserPendingApproval = error =>
-  error &&
-  error.status === 403 &&
-  hasErrorWithCode(error, ERROR_CODE_USER_PENDING_APPROVAL);
+export const isErrorUserPendingApproval = (error: StorableError | null | undefined): boolean =>
+  !!(
+    error &&
+    error.status === 403 &&
+    hasErrorWithCode(error, ERROR_CODE_USER_PENDING_APPROVAL)
+  );
 
 /**
  * Check if the given API error (from `sdk.transactions.initiate(params)`
  * is due to denied permission to initiate transactions.
  */
-export const isErrorNoPermissionForInitiateTransactions = error =>
-  error &&
-  error.status === 403 &&
-  hasErrorWithCode(error, ERROR_CODE_PERMISSION_DENIED_INITIATE_TRANSACTIONS);
+export const isErrorNoPermissionForInitiateTransactions = (
+  error: StorableError | null | undefined
+): boolean =>
+  !!(
+    error &&
+    error.status === 403 &&
+    hasErrorWithCode(error, ERROR_CODE_PERMISSION_DENIED_INITIATE_TRANSACTIONS)
+  );
 
 /**
  * Check if the given API error (from `sdk.transactions.initiate(params)`
  * is due to denied permission to view marketplace data.
  */
-export const isErrorNoViewingPermission = error => {
-  return (
+export const isErrorNoViewingPermission = (error: StorableError | null | undefined): boolean => {
+  return !!(
     error &&
     error.status === 403 &&
     hasErrorWithCode(error, ERROR_CODE_PERMISSION_DENIED_READ)
   );
 };
 
+// ============================================================================
+// Stripe Account Error Checks
+// ============================================================================
+
 /**
  * Check if the given API error (from
  * 'sdk.stripeAccount.create(payoutDetails)') is due to
  * invalid postal code in the given country.
  */
-export const isStripeInvalidPostalCode = error => {
+export const isStripeInvalidPostalCode = (error: StorableError | null | undefined): boolean => {
   const msgRe = /^Invalid [A-Z]{2} postal code$/;
   return errorAPIErrors(error).some(apiError => {
     // Stripe doesn't seem to give an error code for this specific
     // case, so we have to recognize it from the message.
-    const msg =
-      apiError.meta && apiError.meta.stripeMessage
-        ? apiError.meta.stripeMessage
-        : '';
+    const msg = (apiError as any)?.meta?.stripeMessage ?? '';
     return msgRe.test(msg);
   });
 };
 
-export const isStripeError = error => {
+/**
+ * Check if the error contains a Stripe error message
+ */
+export const isStripeError = (error: StorableError | null | undefined): boolean => {
   return errorAPIErrors(error).some(apiError => {
     // Stripe doesn't seem to give an error code for this specific
     // case, so we have to recognize it from the message.
-    return !!(apiError.meta && apiError.meta.stripeMessage);
+    return !!((apiError as any)?.meta?.stripeMessage);
   });
 };
 
 /**
- * Check if the given transition error is
- * due to no quantity information in the transition params.
+ * Check if the request failed because Stripe prevented account deletion. This happens if the
+ * user's Stripe Connect account has a non-zero balance.
  */
-export const isTransitionQuantityInfoMissingError = error =>
-  error?.status === 400 &&
-  error?.statusText.startsWith(
-    'Error: transition should contain quantity information',
+export const isStripeDeletionFailedNonZeroBalance = (
+  error: StorableError | null | undefined
+): boolean => {
+  return !!(
+    error?.status === 400 &&
+    errorAPIErrors(error).some(apiError => apiError.code === 'delete-stripe-account-failed')
   );
+};
+
+// ============================================================================
+// Provider Commission Error Checks
+// ============================================================================
 
 /**
  * Check if the minimum provider commission is larger than the
  * minimum price set for the listing.
  */
-export const isProviderCommissionBiggerThanMinPrice = error =>
-  error?.status === 400 &&
-  error?.statusText.startsWith(
-    'Minimum commission amount is greater than the amount of money paid in',
+export const isProviderCommissionBiggerThanMinPrice = (
+  error: StorableError | null | undefined
+): boolean =>
+  !!(
+    error?.status === 400 &&
+    error?.statusText?.startsWith(
+      'Minimum commission amount is greater than the amount of money paid in'
+    )
   );
+
+// ============================================================================
+// User Deletion Error Checks
+// ============================================================================
 
 /**
  * Check if the user has any unfinished transactions that include Stripe payment
  * processing actions.
  */
-export const isErrorUserHasUnfinishedTransactions = error => {
-  return (
+export const isErrorUserHasUnfinishedTransactions = (
+  error: StorableError | null | undefined
+): boolean => {
+  return !!(
     error?.status === 409 &&
-    error?.statusText.startsWith(
-      'User has transactions on states that include incomplete payment processing',
+    error?.statusText?.startsWith(
+      'User has transactions on states that include incomplete payment processing'
     )
   );
 };
+
+// ============================================================================
+// Error Serialization
+// ============================================================================
 
 /**
- * Check if the request failed because Stripe prevented account deletion. This happens if the
- * user's Stripe Connect account as a non-zero balance. See the [API reference]() for details.
+ * Convert an error to a storable format (for Redux/state management)
+ * Returned object is safe to serialize to JSON
  */
-export const isStripeDeletionFailedNonZeroBalance = error => {
-  return (
-    error?.status === 400 &&
-    errorAPIErrors(error).some(
-      apiError => apiError.code === 'delete-stripe-account-failed',
-    )
-  );
-};
-
-export const storableError = err => {
-  const error = err || {};
+export const storableError = (err: ApiErrorResponse | null | undefined): StorableError => {
+  const error = err || ({} as ApiErrorResponse);
   const { name, message, status, statusText } = error;
   // Status, statusText, and data.errors are (possibly) added to the error object by SDK
   const apiErrors = responseAPIErrors(error);

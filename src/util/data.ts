@@ -1,3 +1,4 @@
+
 /**
  * Denormalize JSON object.
  * NOTE: Currently, this only handles denormalization of image references
@@ -58,7 +59,10 @@ const denormalizeJsonData = (data: any, included: any[]): any => {
  * @returns deep copy of asset data with images denormalized into it.
  */
 
-export const denormalizeAssetData = assetJson => {
+export const denormalizeAssetData = (assetJson: {
+  data: any
+  included: any[]
+}) => {
   const { data, included = [] } = assetJson || {};
   return denormalizeJsonData(data, included);
 };
@@ -70,7 +74,6 @@ export const denormalizeAssetData = assetJson => {
 export const updatedEntities = (
   oldEntities: Record<string, any>,
   apiResponse: any,
-  sanitizeConfig = {},
 ) => {
   const { data, included = [] } = apiResponse;
   const objects = (Array.isArray(data) ? data : [data]).concat(included);

@@ -26,13 +26,17 @@ export interface PriceVariations {
 }
 
 export interface ListingType {
-  listingType: string;
+  id: string;
   label: string;
-  transactionType: TransactionType;
+  transactionProcess: {
+    name: string;
+    alias: string;
+  };
+  unitType?: string;
 
   defaultListingFields: DefaultListingFields;
 
-  availabilityType: string;
+  availabilityType?: string;
   stockType?: string;
   priceVariations?: PriceVariations;
 }
@@ -80,15 +84,16 @@ export interface ListingTypeConfig {
 }
 
 export interface ListingField {
+  label: string;
   key: string;
   scope: string; // "public"
   schemaType: SchemaType;
 
   enumOptions?: EnumOption[];
 
-  minimum?: number;
-  maximum?: number;
-  step?: number;
+  // minimum?: number;
+  // maximum?: number;
+  // step?: number;
 
   filterConfig: FilterConfig;
   showConfig: ShowConfig;

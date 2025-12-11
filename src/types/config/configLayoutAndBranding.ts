@@ -1,46 +1,19 @@
-export interface ImageVariant {
-  height: number;
-  width: number;
-  url: string;
-  name: string;
-}
-
-export interface ImageAsset {
-  id: string;
-  type: 'imageAsset';
-  attributes: {
-    variants: Record<string, ImageVariant>;
-    assetPath: string;
-  };
-}
-
 // -----------------------------------------------------------------------------
 // BRANDING
 // -----------------------------------------------------------------------------
 
-export interface Branding {
-  marketplaceColor: string;
-  marketplaceColorDark: string;
-  marketplaceColorLight: string;
-  colorPrimaryButton: string;
-  colorPrimaryButtonDark: string | null;
-  colorPrimaryButtonLight: string | null;
+import { ImageAsset } from "../common/images";
 
-  //optional we only use colors in the app
-  logoSettings?: {
-    height: number;
-    format: string;
+export type BrandingAssetData = {
+  logo: ImageAsset;
+  favicon: ImageAsset;
+  appIcon: ImageAsset
+  loginBackgroundImage: ImageAsset
+  socialSharingImage: ImageAsset
+  marketplaceColors: {
+    mainColor: string;
   };
-
-  logoImageDesktop?: ImageAsset | null;
-  logoImageMobile?: ImageAsset | null;
-  brandImage?: ImageAsset | null;
-  favicon?: ImageAsset | null;
-  appIcon?: ImageAsset | null;
-
-  facebookImage?: string | null;
-  twitterImage?: string | null;
-}
+};
 
 // -----------------------------------------------------------------------------
 // LAYOUT
@@ -58,7 +31,7 @@ export interface ListingImageLayout {
   variantPrefix: string;
 }
 
-export interface Layout {
+export interface LayoutAssetData {
   searchPage: LayoutVariant;
   listingPage: LayoutVariant;
   listingImage: ListingImageLayout;

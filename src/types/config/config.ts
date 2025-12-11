@@ -2,7 +2,7 @@
 // IMAGE ASSETS
 // -----------------------------------------------------------------------------
 
-import { Branding, Layout } from './configLayoutAndBranding';
+import { BrandingAssetData as Branding, LayoutAssetData as Layout } from './configLayoutAndBranding';
 import { ListingConfig } from './configListing';
 import { MapsConfig } from './configMaps';
 import { SearchConfig } from './configSearch';
@@ -10,6 +10,7 @@ import { StripeConfig } from './configStripe';
 import { UserConfig } from './configUser';
 
 export interface LocalizationConfig {
+  currency?: string;
   locale: string;
   firstDayOfWeek: number;
 }
