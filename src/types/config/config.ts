@@ -2,13 +2,6 @@
 // IMAGE ASSETS
 // -----------------------------------------------------------------------------
 
-import { BrandingAssetData as Branding, LayoutAssetData as Layout } from './configLayoutAndBranding';
-import { ListingConfig } from './configListing';
-import { MapsConfig } from './configMaps';
-import { SearchConfig } from './configSearch';
-import { StripeConfig } from './configStripe';
-import { UserConfig } from './configUser';
-
 export interface LocalizationConfig {
   currency?: string;
   locale: string;
@@ -57,41 +50,8 @@ export interface CategoryNode {
 }
 
 export type AccessControlConfig = any;
-export interface AppConfig {
-  marketplaceRootURL: string;
-  currency: string;
-  listingMinimumPriceSubUnits: number;
-  marketplaceName: string;
-
-  localization: LocalizationConfig;
-  appCdnAssets: AppCdnAssets;
-  siteFacebookPage: string | null;
-  siteInstagramPage: string | null;
-  siteTwitterHandle: string | null;
-  googleSearchConsole: GoogleSearchConsoleConfig;
-  address: AddressConfig;
-
-  branding: Branding;
-  layout: Layout;
-  maps: MapsConfig;
-  listing: ListingConfig;
-  stripe: StripeConfig;
-  search: SearchConfig;
-  user: UserConfig;
-  categoryConfiguration: CategoryConfiguration;
-
-  topbar: any;
-  footer: any;
-
-  hasMandatoryConfigurations: boolean;
-}
 
 export type Translations = Record<string, string>;
-
-export interface FetchAppAssetsResponse {
-  translations: Translations;
-  appConfig: AppConfig;
-}
 
 export type TransactionSizeConfig = {
   listingMinimumPrice: {

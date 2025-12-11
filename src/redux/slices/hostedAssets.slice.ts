@@ -58,12 +58,15 @@ export type AssetsThunkResponse = {
   googleAnalyticsId: string | null;
 };
 
+export type AppConfig = ReturnType<typeof mergeConfig>;
+
 export interface AssetSliceData {
   // appAssets: Record<string, string>;
   // pageAssetsData: Record<string, any> | null;
   // currentPageAssets: string[];
   hostedConfig?: AssetsThunkResponse['hostedConfig'];
   hostedTranslations?: AssetsThunkResponse['hostedTranslations'];
+  appConfig?: AppConfig;
   version: string | null;
   inProgress: boolean;
   error: StorableError | null;
@@ -267,7 +270,9 @@ const hostedAssetsSlice = createSlice({
         state.hostedConfig = hostedConfig;
         state.hostedTranslations = hostedTranslations;
 
-        mergeConfig(state.hostedConfig, defaultConfig);
+        const appConfig = mergeConfig(state.hostedConfig, defaultConfig);
+
+        state.appConfig = appConfig;
 
         state.version = version;
         state.googleAnalyticsId = googleAnalyticsId;
