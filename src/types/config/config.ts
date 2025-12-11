@@ -56,14 +56,7 @@ export interface CategoryNode {
   subcategories: CategoryNode[];
 }
 
-// The root category configuration
-export interface CategoryConfiguration {
-  key: string; // "categoryLevel"
-  scope: string; // "public"
-  categoryLevelKeys: string[]; // ["categoryLevel1", "categoryLevel2", ...]
-  categories: CategoryNode[]; // top-level categories (recursive tree)
-}
-
+export type AccessControlConfig = any;
 export interface AppConfig {
   marketplaceRootURL: string;
   currency: string;
@@ -99,3 +92,10 @@ export interface FetchAppAssetsResponse {
   translations: Translations;
   appConfig: AppConfig;
 }
+
+export type TransactionSizeConfig = {
+  listingMinimumPrice: {
+    amount: number;
+    type: string;
+  };
+};

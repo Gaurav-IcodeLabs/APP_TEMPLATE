@@ -1246,9 +1246,9 @@ const restructureUserFields = hostedUserFields => {
 //   ],
 // }
 const validateCategoryConfig = (
-  hostedConfig: Exclude<AssetSliceData['hostedConfig'], undefined>['categories'],
+  hostedConfig: Exclude<AssetSliceData['hostedConfig'], undefined>['categories'] | undefined,
 ) => {
-  const validateData = (data: CategoryConfiguration | undefined) => {
+  const validateData = (data: Exclude<AssetSliceData['hostedConfig'], undefined>['categories'] | undefined) => {
     if (!data || !data.categories || !Array.isArray(data.categories)) {
       return {};
     }

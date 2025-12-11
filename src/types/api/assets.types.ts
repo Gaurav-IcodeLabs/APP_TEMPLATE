@@ -407,24 +407,17 @@ export type FooterAssetData = any;
 export type TopbarAssetData = any;
 
 export type Assets = {
-  translations: {
-    path: '/content/translations.json';
-    data: TranslationAssetData;
-  };
-  footer: {
-    path: '/content/footer.json';
-    data: FooterAssetData;
-  };
-  topbar: {
-    path: '/content/top-bar.json';
-    data: TopbarAssetData;
-  };
+  footer: any;
+  topbar: any;
   branding: {
-    path: '/design/branding.json';
-    data: BrandingAssetData;
+    logo: ImageAsset;
+    favicon: ImageAsset;
+    appIcon: ImageAsset;
+    loginBackgroundImage: ImageAsset;
+    socialSharingImage: ImageAsset;
+    marketplaceColors: {
+      mainColor: string;
+    };
   };
-  layout: {
-    path: '/design/layout.json';
-    data: LayoutAssetData;
-  };
+  layout: LayoutAssetData;
 };

@@ -5,21 +5,24 @@ import {
   PayloadAction,
 } from '@reduxjs/toolkit';
 import defaultConfig from '../../config/configDefault';
-import { denormalizeAssetData, mergeConfig, storableError } from '../../util';
-import * as log from '../../util/log';
-import { RootState } from '../store';
 import { StorableError } from '../../types/api/api.types';
+import { Assets, TranslationAssetData } from '../../types/api/assets.types';
 import {
-  CategoryConfiguration,
+  AccessControlConfig,
+  CategoryNode,
   GoogleSearchConsoleConfig,
-  ListingConfig,
+  ListingFields,
+  ListingType,
   LocalizationConfig,
   MapsConfig,
   SearchConfig,
+  TransactionSizeConfig,
   UserFieldConfigItem,
   UserTypeConfigItem,
 } from '../../types/config';
-import { Assets } from '../../types/api/assets.types';
+import { denormalizeAssetData, mergeConfig, storableError } from '../../util';
+import * as log from '../../util/log';
+import { RootState } from '../store';
 
 interface Thunk {
   state: RootState;
@@ -27,64 +30,30 @@ interface Thunk {
 }
 
 export type AssetsThunkResponse = {
-  assets: Assets & {
+  hostedConfig: Assets & {
+    localization: LocalizationConfig;
+    accessControl: AccessControlConfig;
+    userTypes: {
+      userTypes: UserTypeConfigItem[];
+    };
+    userFields: UserFieldConfigItem[];
+    categories: {
+      categories: CategoryNode[];
+    };
     listingTypes: {
-      path: '/listings/listing-types.json';
-      data: {
-        listingTypes: ListingConfig['listingTypes'];
-      };
+      listingTypes: ListingType[];
     };
     listingFields: {
-      path: '/listings/listing-fields.json';
-      data: {
-        listingFields: ListingConfig['listingFields'];
-      };
+      listingFields: ListingFields;
     };
-    search: {
-      path: '/listings/listing-search.json';
-      data: SearchConfig;
-    };
-    transactionSize: {
-      path: '/transactions/minimum-transaction-size.json';
-      data: {
-        listingMinimumPrice: {
-          amount: number;
-          type: string;
-        };
-      };
-    };
-    analytics: {
-      path: '/integrations/analytics.json';
-    };
-    googleSearchConsole: {
-      path: '/integrations/google-search-console.json';
-      data: GoogleSearchConsoleConfig;
-    };
-    maps: {
-      path: '/integrations/map.json';
-      data: MapsConfig[];
-    };
-    categories: {
-      path: '/listings/listing-categories.json';
-      data: CategoryConfiguration;
-    };
-    localization: {
-      path: '/general/localization.json';
-      data: LocalizationConfig;
-    };
-    userTypes: {
-      path: '/users/user-types.json';
-      data: {
-        userTypes: UserTypeConfigItem[];
-      };
-    };
-    userFields: {
-      path: '/users/user-fields.json';
-      data: {
-        userFields: UserFieldConfigItem[];
-      };
-    };
+    search: SearchConfig;
+
+    transactionSize: TransactionSizeConfig;
+    analytics: {};
+    googleSearchConsole: GoogleSearchConsoleConfig;
+    maps: MapsConfig;
   };
+  hostedTranslations: TranslationAssetData;
   version: string | null;
   googleAnalyticsId: string | null;
 };
@@ -93,8 +62,8 @@ export interface AssetSliceData {
   // appAssets: Record<string, string>;
   // pageAssetsData: Record<string, any> | null;
   // currentPageAssets: string[];
-  hostedConfig?: Omit<AssetsThunkResponse['assets'], 'translations'>;
-  hostedTranslations?: AssetsThunkResponse['assets']['translations']['data'];
+  hostedConfig?: AssetsThunkResponse['hostedConfig'];
+  hostedTranslations?: AssetsThunkResponse['hostedTranslations'];
   version: string | null;
   inProgress: boolean;
   error: StorableError | null;
@@ -245,8 +214,25 @@ export const fetchAppAssets = createAsyncThunk<
           {},
         );
 
+        const { translations: translationsRaw, ...rest } = (collectedAssets ||
+          {}) as any;
+        // We'll handle translations as a separate data.
+        // It's given to React Intl instead of pushing to config Context
+        const translations = translationsRaw?.data || {};
+
+        // Rest of the assets are considered as hosted configs
+        const configEntries = Object.entries(rest);
+        const hostedConfig = configEntries.reduce(
+          (collectedData, [name, content]) => {
+            return { ...collectedData, [name]: (content as any)?.data || {} };
+          },
+          {},
+        );
+
         return {
-          assets: collectedAssets as AssetsThunkResponse['assets'],
+          hostedConfig: hostedConfig as AssetsThunkResponse['hostedConfig'],
+          hostedTranslations:
+            translations as AssetsThunkResponse['hostedTranslations'],
           version: versionInTranslationsCall as string | null,
           googleAnalyticsId,
         };
@@ -276,10 +262,10 @@ const hostedAssetsSlice = createSlice({
         state.error = null;
       })
       .addCase(fetchAppAssets.fulfilled, (state, action) => {
-        const { assets, version, googleAnalyticsId } = action.payload;
-        const { translations: translationsRaw, ...rest } = assets;
-        state.hostedConfig = rest;
-        state.hostedTranslations = translationsRaw?.data;
+        const { hostedConfig, hostedTranslations, version, googleAnalyticsId } =
+          action.payload;
+        state.hostedConfig = hostedConfig;
+        state.hostedTranslations = hostedTranslations;
 
         mergeConfig(state.hostedConfig, defaultConfig);
 
