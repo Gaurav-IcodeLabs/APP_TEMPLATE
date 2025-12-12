@@ -37,7 +37,7 @@ export type AssetsThunkResponse = {
     userTypes: {
       userTypes: UserTypeConfigItem[];
     };
-    userFields: UserFieldConfigItem[];
+    userFields: { userFields: UserFieldConfigItem[] };
     categories: {
       categories: CategoryNode[];
     };

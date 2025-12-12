@@ -25,7 +25,7 @@ export const mainSearch = {
  */
 
 export const dateRangeFilter = {
-  schemaType: 'dates',
+  schemaType: 'dates' as const,
   // Should the entire date range be available, or just part of it
   // Note: Since we don't enforce location search for dates filtering,
   //       we don't use API's 'time-full' in actual queries. It would require time zone info.
@@ -39,7 +39,7 @@ export const dateRangeFilter = {
  * To use this built-in configuration, you need to remove the overwrite from configHelper.js (mergeSearchConfig func)
  */
 export const priceFilter = {
-  schemaType: 'price',
+  schemaType: 'price' as const,
   // Note: unlike most prices this is not handled in subunits
   min: 0,
   max: 1000,
@@ -73,17 +73,17 @@ export const sortConfig = {
 
   options: [
     // These are default sort options
-    { key: 'createdAt', labelTranslationKey: 'SortBy.newest' },
-    { key: '-createdAt', labelTranslationKey: 'SortBy.oldest' },
-    { key: '-price', labelTranslationKey: 'SortBy.lowestPrice' },
-    { key: 'price', labelTranslationKey: 'SortBy.highestPrice' },
+    { key: 'createdAt' as const, labelTranslationKey: 'SortBy.newest' as const },
+    { key: '-createdAt' as const, labelTranslationKey: 'SortBy.oldest' as const },
+    { key: '-price' as const, labelTranslationKey: 'SortBy.lowestPrice' as const },
+    { key: 'price' as const, labelTranslationKey: 'SortBy.highestPrice' as const },
     // If you add own sort options, you can also use label key: { key: 'meta_rating', label: 'Highest rated' },
 
     // The relevance is only used for keyword search, but the
     // parameter isn't sent to the Marketplace API. The key is purely
     // for handling the internal state of the sorting dropdown.
     {
-      key: 'relevance',
+      key: 'relevance' as const,
       labelTranslationKey: 'SortBy.relevance',
       labelTranslationKeyLong: 'SortBy.relevanceLong',
     },

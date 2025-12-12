@@ -12,7 +12,7 @@
 
 // --- Category filter ---
 export interface CategoryFilter {
-  enabled: boolean;
+  enabled?: boolean;
   key: string; // "categoryLevel"
   schemaType: 'category';
   scope: string; // "public"
@@ -22,18 +22,18 @@ export interface CategoryFilter {
 
 // --- Dates filter ---
 export interface DatesFilter {
-  key: string; // "dates"
+  key?: string; // "dates"
   schemaType: 'dates';
   label?: string;
-  availability: string; // "time-full"
-  dateRangeMode: string; // "day"
-  enabled: boolean;
+  availability?: string; // "time-full"
+  dateRangeMode?: string; // "day"
+  enabled?: boolean;
 }
 
 // --- Price filter ---
 export interface PriceFilter {
-  enabled: boolean;
-  key: string; // "price"
+  enabled?: boolean;
+  key?: string; // "price"
   schemaType: 'price';
   label?: string;
   min: number;
@@ -42,14 +42,14 @@ export interface PriceFilter {
 }
 
 export interface KeywordsFilter {
-  enabled: boolean;
+  enabled?: boolean;
   key: string; // "keywords"
   schemaType: 'keywords';
   label?: string;
 }
 
 // Union of default filters
-export type DefaultFilter = CategoryFilter | DatesFilter | PriceFilter | KeywordsFilter;
+export type DefaultFilter = CategoryFilter | DatesFilter | PriceFilter | KeywordsFilter | SeatsFilter | ListingTypeFilter;
 
 // ----------------------
 //  SORTING CONFIG
@@ -75,14 +75,14 @@ export interface SortConfig {
 // ----------------------
 
 export interface ListingTypeFilter {
-  enabled: boolean;
+  enabled?: boolean;
   key: string; // "listingType"
   schemaType: 'listingType';
   label?: string;
 }
 
 export interface SeatsFilter {
-  enabled: boolean;
+  enabled?: boolean;
   key: string; // "seats"
   schemaType: 'seats';
   label?: string;

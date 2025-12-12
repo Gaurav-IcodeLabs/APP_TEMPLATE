@@ -218,7 +218,7 @@ export const isTransactionInitiateAmountTooLowError = (
     try {
       // TODO: This is a temporary solution until a proper error code
       // for this specific error is received in the response.
-      const msg = (apiError as any)?.meta?.stripeMessage;
+      const msg = apiError.meta?.stripeMessage;
       isAmountTooLow =
         !!msg &&
         (msg.startsWith('Amount must be at least') ||
@@ -247,7 +247,7 @@ export const isTransactionChargeDisabledError = (
 
     let isChargeCreationDisabled = false;
     try {
-      const msg = (apiError as any)?.meta?.stripeMessage;
+      const msg = apiError.meta?.stripeMessage;
       isChargeCreationDisabled =
         !!msg &&
         (msg.startsWith('Your account cannot currently make charges.') ||
@@ -274,10 +274,10 @@ export const transactionInitiateOrderStripeErrors = (
     return errorAPIErrors(error).reduce((messages: string[], apiError) => {
       const isPaymentFailedError =
         apiError.status === 402 && apiError.code === ERROR_CODE_PAYMENT_FAILED;
-      const hasStripeError = !!((apiError as any)?.meta?.stripeMessage);
+      const hasStripeError = !!(apiError.meta?.stripeMessage);
       const stripeMessageMaybe =
-        isPaymentFailedError && hasStripeError && (apiError as any)?.meta?.stripeMessage
-          ? [(apiError as any)?.meta?.stripeMessage]
+        isPaymentFailedError && hasStripeError && apiError.meta?.stripeMessage
+          ? [apiError.meta?.stripeMessage]
           : [];
       return [...messages, ...stripeMessageMaybe];
     }, []);
@@ -408,7 +408,7 @@ export const isStripeInvalidPostalCode = (error: StorableError | null | undefine
   return errorAPIErrors(error).some(apiError => {
     // Stripe doesn't seem to give an error code for this specific
     // case, so we have to recognize it from the message.
-    const msg = (apiError as any)?.meta?.stripeMessage ?? '';
+    const msg = apiError.meta?.stripeMessage ?? '';
     return msgRe.test(msg);
   });
 };

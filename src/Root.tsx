@@ -22,17 +22,17 @@ const Root = () => {
 
       const res = await store.dispatch(fetchAppAssets()).unwrap();
       // console.log('res', JSON.stringify(res, null, 2))
-      if (res.appConfig) {
-        // i18n.addResourceBundle(
-        //   'en',
-        //   'translation',
-        //   mergeTranslations(res.translations),
-        // );
-        setConfig({
-          appConfig: res.appConfig,
-          colors: mergeColors(res.appConfig.branding || {}),
-        });
-      }
+      // if (res.appConfig) {
+      //   // i18n.addResourceBundle(
+      //   //   'en',
+      //   //   'translation',
+      //   //   mergeTranslations(res.translations),
+      //   // );
+      //   setConfig({
+      //     appConfig: res.appConfig,
+      //     colors: mergeColors(res.appConfig.branding || {}),
+      //   });
+      // }
     } catch (error) {
       console.error('App initialization failed:', error);
       // Fallback to default config if fetch fails

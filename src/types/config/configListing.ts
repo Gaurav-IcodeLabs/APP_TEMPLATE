@@ -56,7 +56,7 @@ export interface EnumOption {
 
 export interface FilterConfig {
   indexForSearch?: boolean;
-  label: string;
+  label?: string;
   filterType?: string; // e.g. SelectMultipleFilter
   searchMode?: string; // e.g. has_all
   group?: string; // "primary"
@@ -91,9 +91,11 @@ export interface ListingField {
 
   enumOptions?: EnumOption[];
 
-  // minimum?: number;
-  // maximum?: number;
-  // step?: number;
+  numberConfig?: {
+    minimum?: number;
+    maximum?: number;
+    step?: number;
+  };
 
   filterConfig: FilterConfig;
   showConfig: ShowConfig;

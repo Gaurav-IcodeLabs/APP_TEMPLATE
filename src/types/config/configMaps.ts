@@ -26,9 +26,10 @@ export interface MapSearchConfig {
 export interface MapsConfig {
   fuzzy: FuzzySearchConfig;
 
-  googleMapsAPIKey: string;
+  googleMapsApiKey: string;
 
-  mapProvider: 'google' | 'mapbox';
+  mapProvider: 'googleMaps' | 'mapbox';
+  provider?: 'googleMaps' | 'mapbox';
 
   mapboxAccessToken?: string | null;
   mapboxConfig?: MapboxConfig | null;

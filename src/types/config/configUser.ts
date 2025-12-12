@@ -67,7 +67,7 @@ export interface UserFieldShowConfig {
 
 export interface UserFieldSaveConfig {
   label: string;
-  isRequired: boolean;
+  required: boolean;
   displayInSignUp: boolean;
 }
 
@@ -87,6 +87,7 @@ export type UserSchemaType =
 export interface UserFieldConfigItem {
   key: string;
   scope: string;
+  label?: string;
 
   schemaType: UserSchemaType;
 
@@ -97,9 +98,9 @@ export interface UserFieldConfigItem {
   // Optional for enum/multi-enum
   enumOptions?: UserEnumOption[];
 
-  showConfig: UserFieldShowConfig;
-  saveConfig: UserFieldSaveConfig;
-  userTypeConfig: UserFieldTypeConfig;
+  showConfig?: UserFieldShowConfig;
+  saveConfig?: UserFieldSaveConfig;
+  userTypeConfig?: UserFieldTypeConfig;
 }
 
 // -----------------------------------------------------------------------------

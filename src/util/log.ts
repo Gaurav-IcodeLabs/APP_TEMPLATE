@@ -8,6 +8,7 @@
  */
 
 import appSettings from '../config/settings';
+import { ApiErrorResponse } from '../types/api/api.types';
 
 const ingoreErrorsMap = {
   ['ResizeObserver loop limit exceeded']: true, // Some exotic browsers seems to emit these.
@@ -59,7 +60,9 @@ export const clearUserId = () => {
   // Sentry.setUser(null);
 };
 
-const printAPIErrorsAsConsoleTable = apiErrors => {
+const printAPIErrorsAsConsoleTable = (
+  apiErrors: { status: number; code: string; meta?: Record<string, any> }[],
+) => {
   if (
     apiErrors != null &&
     apiErrors.length > 0 &&
@@ -76,11 +79,11 @@ const printAPIErrorsAsConsoleTable = apiErrors => {
   }
 };
 
-const responseAPIErrors = error => {
+const responseAPIErrors = (error: ApiErrorResponse) => {
   return error && error.data && error.data.errors ? error.data.errors : [];
 };
 
-const responseApiErrorInfo = (err: Error) =>
+const responseApiErrorInfo = (err: ApiErrorResponse) =>
   responseAPIErrors(err).map(e => ({
     status: e.status,
     code: e.code,
@@ -96,7 +99,11 @@ const responseApiErrorInfo = (err: Error) =>
  * @param {String} code Error code
  * @param {Object} data Additional data to be sent to Sentry
  */
-export const error = (e: Error, code: string, data: Record<string, any>) => {
+export const error = (
+  e: ApiErrorResponse,
+  code: string,
+  data?: Record<string, any>,
+) => {
   const apiErrors = responseApiErrorInfo(e);
   if (appSettings.sentryDsn) {
     const extra = { ...data, apiErrorData: apiErrors };

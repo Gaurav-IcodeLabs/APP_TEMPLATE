@@ -73,6 +73,7 @@ export interface ApiErrorDetail {
   status: number;
   code: string;
   title: string;
+  meta?: Record<string, any>;
   details?: Record<string, any>; // Not part of public API, for debugging only
 }
 

@@ -1,6 +1,9 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { AuthInfo } from '../../types/auth';
 import { AppDispatch, RootState } from '../store';
+import * as log from '../../util/log';
+import { ApiErrorResponse } from '../../types/api/api.types';
+import { storableError } from '../../util';
 
 const authenticated = (authInfo: AuthInfo) => authInfo?.isAnonymous === false;
 const loggedInAs = (authInfo: AuthInfo) => authInfo?.isLoggedInAs === true;
@@ -38,35 +41,44 @@ const initialState = {
 
 // ================ Async Thunks ================ //
 
-const authInfoThunk = createAsyncThunk<Promise<AuthInfo | null>, void, {
-  dispatch: AppDispatch;
-  state: RootState;
-  extra: any;
-}>('auth/authInfo', (_, thunkAPI) => {
+const loadAuthInfo = createAsyncThunk<
+  Promise<AuthInfo | null>,
+  void,
+  {
+    dispatch: AppDispatch;
+    state: RootState;
+    extra: any;
+  }
+>('auth/loadAuthInfo', (_, thunkAPI) => {
   const { extra: sdk } = thunkAPI;
-  return sdk.authInfo().catch(e => {
+  return sdk.authInfo().catch((e: ApiErrorResponse) => {
     // Requesting auth info just reads the token from the token
     // store (i.e. cookies), and should not fail in normal
     // circumstances. If it fails, it's due to a programming
     // error. In that case we mark the operation done and dispatch
     // `null` success action that marks the user as unauthenticated.
     log.error(e, 'auth-info-failed');
+
     return null;
   });
 });
 
-const loginThunk = createAsyncThunk(
-  'auth/login',
+const loginWithUsernamePassword = createAsyncThunk<
+  unknown,
+  { username: string; password: string },
+  {
+    dispatch: AppDispatch;
+    state: RootState;
+    extra: any;
+  }
+>(
+  'auth/loginWithUsernamePassword',
   ({ username, password }, thunkAPI) => {
-    const { rejectWithValue, extra: sdk, dispatch } = thunkAPI;
+    const { rejectWithValue, extra: sdk } = thunkAPI;
 
     return sdk
       .login({ username, password })
-      .then(() => {
-        return dispatch(fetchCurrentUser({ afterLogin: true }));
-      })
-      .then(() => ({ username, password }))
-      .catch(e => rejectWithValue(storableError(e)));
+      .catch((e: ApiErrorResponse) => rejectWithValue(storableError(e)));
   },
   {
     condition: (_, { getState }) => {
@@ -75,10 +87,15 @@ const loginThunk = createAsyncThunk(
         return false;
       }
     },
-  }
+  },
 );
 
-const logoutThunk = createAsyncThunk(
+const logoutThunk = createAsyncThunk<unknown, void, {
+  dispatch: AppDispatch;
+  state: RootState;
+  extra: any;
+  rejectWithValue: (value: unknown) => never;
+}>(
   'auth/logout',
   (_, thunkAPI) => {
     const { rejectWithValue, extra: sdk, dispatch } = thunkAPI;
@@ -86,11 +103,11 @@ const logoutThunk = createAsyncThunk(
     return sdk
       .logout()
       .then(() => {
-        dispatch(clearCurrentUser());
+        // dispatch(clearCurrentUser());
         log.clearUserId();
         return true;
       })
-      .catch(e => rejectWithValue(storableError(e)));
+      .catch((e: ApiErrorResponse) => rejectWithValue(storableError(e)));
   },
   {
     condition: (_, { getState }) => {
@@ -99,18 +116,25 @@ const logoutThunk = createAsyncThunk(
         return false;
       }
     },
-  }
+  },
 );
 
-const signupThunk = createAsyncThunk(
-  'auth/signup',
+const signupWithEmailPassword = createAsyncThunk<unknown, {email: string, password: string}, {
+  dispatch: AppDispatch;
+  state: RootState;
+  extra: any;
+  rejectWithValue: (value: unknown) => never;
+}>(
+  'auth/signupWithEmailPassword',
   (params, thunkAPI) => {
     const { rejectWithValue, extra: sdk, dispatch } = thunkAPI;
 
     return sdk.currentUser
       .create(params)
       .then(() =>
-        dispatch(loginThunk({ username: params.email, password: params.password })).unwrap()
+        dispatch(
+          loginThunk({ username: params.email, password: params.password }),
+        ).unwrap(),
       )
       .then(() => params)
       .catch(e => {
@@ -129,7 +153,7 @@ const signupThunk = createAsyncThunk(
         return false;
       }
     },
-  }
+  },
 );
 
 const signupWithIdpThunk = createAsyncThunk(
@@ -151,7 +175,7 @@ const signupWithIdpThunk = createAsyncThunk(
         return false;
       }
     },
-  }
+  },
 );
 
 // ================ Slice ================ //
@@ -244,9 +268,17 @@ export default authSlice.reducer;
 // ================ Selectors ================ //
 
 export const authenticationInProgress = (state, nextInProgress = 'any') => {
-  const { loginInProgress, logoutInProgress, signupInProgress, confirmInProgress } = state.auth;
+  const {
+    loginInProgress,
+    logoutInProgress,
+    signupInProgress,
+    confirmInProgress,
+  } = state.auth;
   const anyInProgress =
-    loginInProgress || logoutInProgress || signupInProgress || confirmInProgress;
+    loginInProgress ||
+    logoutInProgress ||
+    signupInProgress ||
+    confirmInProgress;
   return nextInProgress === 'loginInProgress'
     ? loginInProgress || logoutInProgress || confirmInProgress
     : anyInProgress;

@@ -1,23 +1,34 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import defaultConfig from '../config/configDefault';
 import { subUnitDivisors } from '../config/settingsCurrency';
-import {
-  AssetSliceData,
-  AssetsThunkResponse,
-} from '../redux/slices/hostedAssets.slice';
-import { Assets } from '../types/api/assets.types';
+import { ENV } from '../constants';
+import { AssetsThunkResponse } from '../redux/slices/hostedAssets.slice';
 import {
   getSupportedProcessesInfo,
   isBookingProcessAlias,
 } from '../transactions/transaction';
+import { ImageAsset } from '../types';
+import { Assets } from '../types/api/assets.types';
 import {
   CategoryNode,
   LayoutAssetData,
+  LayoutVariant,
   ListingFields,
+  ListingImageLayout,
   ListingType,
   TransactionSizeConfig,
+  UserTypeConfigItem,
+  DefaultFilter,
+  SortConfig,
+  SearchConfig,
+  FilterConfig,
+  ShowConfig,
+  SaveConfig,
+  CategoryConfig,
+  ListingTypeConfig,
+  EnumOption,
+  TransactionType,
 } from '../types/config';
-import { ENV } from '../constants';
-import { ImageAsset } from '../types';
 
 // Generic helpers for validating config values
 
@@ -57,7 +68,11 @@ const printErrorIfHostedAssetIsMissing = (props: Record<string, any>) => {
 };
 
 // Functions to create built-in specs for category setup.
-const depthFirstSearch = (category: any, iterator: any, depth = 0) => {
+const depthFirstSearch = (
+  category: { subcategories: CategoryNode[] },
+  iterator: typeof getMaxDepth,
+  depth = 0,
+): number => {
   const { subcategories = [] } = category;
   return iterator(
     depth,
@@ -95,7 +110,9 @@ const getBuiltInCategorySpecs = (categories: CategoryNode[] = []) => {
  * @param {Object} listingFields object that has 'key' property.
  * @returns true if there's a clash with specific built-in keys.
  */
-const hasClashWithBuiltInPublicDataKey = listingFields => {
+const hasClashWithBuiltInPublicDataKey = (
+  listingFields: ListingFields,
+): boolean => {
   const builtInPublicDataKeys = [
     'listingType',
     'transactionProcessAlias',
@@ -128,7 +145,9 @@ const hasClashWithBuiltInPublicDataKey = listingFields => {
  * @param {Object} accessControlConfig (returned by access-control.json)
  * @returns {Object} accessControl config
  */
-const validAccessControl = (accessControlConfig: HostedAccessControlConfig) => {
+const validAccessControl = (
+  accessControlConfig: HostedAccessControlConfig | undefined,
+) => {
   const accessControl = accessControlConfig || {};
   const marketplace = accessControl?.marketplace || {};
   return { ...accessControl, marketplace: { private: false, ...marketplace } };
@@ -194,8 +213,10 @@ const mergeLocalizations = (
 /////////////////////
 
 // The "arguments" (an Array like object) is only available for non-arrow functions.
-function joinStrings(str1, str2) {
-  const removeTrailingComma = str => str.trim().replace(/,\s*$/, '');
+function joinStrings(str1: string, str2: string) {
+  str1;
+  str2;
+  const removeTrailingComma = (str: string) => str.trim().replace(/,\s*$/, '');
   // Filter out empty strings (falsy) and join remaining items with comma
   return Array.from(arguments)
     .filter(Boolean)
@@ -251,11 +272,11 @@ const hexToCssHsl = (hexColor: string, lightnessDiff: number) => {
   const max = Math.max(r, g, b);
   const min = Math.min(r, g, b);
 
-  let h;
-  let s;
+  let h: number | undefined;
+  let s: number | undefined;
   let l = (max + min) / 2;
 
-  if (max == min) {
+  if (max === min) {
     // achromatic
     h = 0;
     s = 0;
@@ -273,10 +294,14 @@ const hexToCssHsl = (hexColor: string, lightnessDiff: number) => {
         h = (r - g) / d + 4;
         break;
     }
-    h /= 6;
+    if (h) {
+      h /= 6;
+    }
   }
 
-  h = Math.round(h * 360);
+  if (h) {
+    h = Math.round(h * 360);
+  }
   s = Math.round(s * 100);
   l = Math.round(l * 100);
 
@@ -288,7 +313,7 @@ const getVariantURL = (
   variantName: string,
 ) => {
   return socialSharingImage?.type === 'imageAsset'
-    ? socialSharingImage.attributes.variants[variantName]?.url
+    ? socialSharingImage.attributes.variants?.[variantName]?.url
     : null;
 };
 
@@ -358,13 +383,15 @@ const mergeBranding = (
 // Merge layouts //
 ///////////////////
 
-const pickVariant = (hostedVariant, defaultVariant) =>
-  hostedVariant?.variantType ? hostedVariant : defaultVariant;
+const pickVariant = (
+  hostedVariant: LayoutVariant | ListingImageLayout,
+  defaultVariant: LayoutVariant | ListingImageLayout,
+) => (hostedVariant?.variantType ? hostedVariant : defaultVariant);
 const validVariantConfig = (
-  hostedVariant,
-  defaultVariant,
-  validVariantTypes,
-  fallback,
+  hostedVariant: LayoutVariant | ListingImageLayout,
+  defaultVariant: LayoutVariant | ListingImageLayout,
+  validVariantTypes: string[],
+  fallback: LayoutVariant | ListingImageLayout,
 ) => {
   const variant = pickVariant(hostedVariant, defaultVariant);
   const isValidVariant = validVariantTypes.includes(variant?.variantType);
@@ -373,7 +400,10 @@ const validVariantConfig = (
     console.warn('Unsupported layout option detected', variant);
   }
   if (variant.variantType === 'cropImage') {
-    const [w, h] = variant.aspectRatio.split('/') || ['1', '1'];
+    const [w, h] = (variant as ListingImageLayout)?.aspectRatio.split('/') || [
+      '1',
+      '1',
+    ];
     const aspectWidth = Number.parseInt(w, 10);
     const aspectHeight = Number.parseInt(h, 10);
     return isValidVariant
@@ -381,7 +411,9 @@ const validVariantConfig = (
           ...variant,
           aspectWidth,
           aspectHeight,
-          variantPrefix: defaultVariant.variantPrefix,
+          ...(defaultVariant && 'variantPrefix' in defaultVariant
+            ? { variantPrefix: defaultVariant.variantPrefix }
+            : {}),
         }
       : fallback;
   }
@@ -431,7 +463,12 @@ const mergeLayouts = (
 ////////////////////////////////////
 
 // Validate enum type strings (if default value is given, value is considered optional)
-const validEnumString = (key, value, options, defaultOption) => {
+const validEnumString = (
+  key: string,
+  value: string,
+  options: string[],
+  defaultOption?: string,
+) => {
   const isUndefined = typeof value === 'undefined';
   const isValidValue = options.includes(value);
   const isValid =
@@ -441,32 +478,47 @@ const validEnumString = (key, value, options, defaultOption) => {
 };
 
 // Validate boolean values (if default value is given, value is considered optional)
-const validBoolean = (key, value, defaultValue) => {
+const validBoolean = (
+  key: string,
+  value: boolean | undefined,
+  defaultValue: boolean | undefined,
+): [boolean, Record<string, boolean>] => {
   const isUndefined = typeof value === 'undefined';
-  const isBoolean = typeof value == 'boolean';
+  const isBoolean = typeof value === 'boolean';
   const isValid =
     (typeof defaultValue !== 'undefined' && isUndefined) || isBoolean;
 
   const validValue = isBoolean
     ? { [key]: value }
     : isValid
-    ? { [key]: defaultValue }
+    ? { [key]: defaultValue! }
     : {};
   return [isValid, validValue];
 };
 
-const validLabel = label => {
+const validLabel = (
+  label: unknown,
+): [boolean, Record<string, string> | Record<string, never>] => {
   const isValid = typeof label === 'string';
   const labelMaybe = isValid ? { label } : {};
-  return [isValid, labelMaybe];
+  return [
+    isValid,
+    labelMaybe as Record<string, string> | Record<string, never>,
+  ];
 };
 
-const validKey = (key, allKeys) => {
+const validKey = (
+  key: string,
+  allKeys: string[],
+): [boolean, Record<string, string>] => {
   const isUniqueKey = allKeys.indexOf(key) === allKeys.lastIndexOf(key);
   return [isUniqueKey, { key }];
 };
 
-const validUserTypesForUserConfig = (userTypeConfig, userTypesInUse = null) => {
+const validUserTypesForUserConfig = (
+  userTypeConfig: { limitToUserTypeIds?: boolean; userTypeIds?: string[] },
+  userTypesInUse: string[] | null = null,
+): [boolean, Record<string, unknown>] => {
   const { limitToUserTypeIds, userTypeIds } = userTypeConfig;
 
   // When no user types are in use, fields by default cannot be limited to a subset of types
@@ -509,9 +561,9 @@ const validUserTypesForUserConfig = (userTypeConfig, userTypesInUse = null) => {
 // You should change your buil-in listing field configs:
 // do not use includeForListingTypes but listingTypeConfig: { limitToListingTypeIds, listingTypeIds }
 const validListingTypesForBuiltInSetup = (
-  includeForListingTypes,
-  listingTypesInUse,
-) => {
+  includeForListingTypes: string[] | null | undefined,
+  listingTypesInUse: string[],
+): [boolean, Record<string, unknown>] => {
   const isUndefinedOrNull = includeForListingTypes == null;
   const isArray = Array.isArray(includeForListingTypes);
   const validatedListingTypes = isArray
@@ -534,9 +586,9 @@ const validListingTypesForBuiltInSetup = (
 };
 
 const validListingTypesForListingTypeConfig = (
-  listingTypeConfig,
-  listingTypesInUse,
-) => {
+  listingTypeConfig: ListingTypeConfig | undefined,
+  listingTypesInUse: string[] | null,
+): [boolean, Record<string, unknown>] => {
   const { limitToListingTypeIds, listingTypeIds } = listingTypeConfig || {};
 
   // When no user types are in use, fields by default cannot be limited to a subset of types
@@ -571,8 +623,8 @@ const validListingTypesForListingTypeConfig = (
   return [isValid, validValue];
 };
 
-const getCategoryIds = categories => {
-  return categories.reduce((picked, conf) => {
+const getCategoryIds = (categories: CategoryNode[]): string[] => {
+  return categories.reduce((picked: string[], conf) => {
     const { id, subcategories } = conf;
     return Array.isArray(subcategories) && subcategories.length > 0
       ? [...picked, id, ...getCategoryIds(subcategories)]
@@ -581,9 +633,9 @@ const getCategoryIds = categories => {
 };
 
 const validListingTypesForCategoryConfig = (
-  categoryConfig,
-  categoriesInUse,
-) => {
+  categoryConfig: CategoryConfig | undefined,
+  categoriesInUse: CategoryNode[] | null,
+): [boolean, Record<string, unknown>] => {
   const { limitToCategoryIds, categoryIds } = categoryConfig || {};
 
   // When no user types are in use, fields by default cannot be limited to a subset of types
@@ -619,10 +671,14 @@ const validListingTypesForCategoryConfig = (
   return [isValid, validValue];
 };
 
-const isStringType = str => typeof str === 'string';
-const pickOptionShapes = o => isStringType(o.option) && isStringType(o.label);
+const isStringType = (str: unknown): str is string => typeof str === 'string';
+const pickOptionShapes = (o: any): o is EnumOption =>
+  isStringType(o?.option) && isStringType(o?.label);
 
-const validSchemaOptions = (enumOptions, schemaType) => {
+const validSchemaOptions = (
+  enumOptions: EnumOption[] | undefined,
+  schemaType: string,
+): [boolean, Record<string, EnumOption[] | []> | Record<string, never>] => {
   const isUndefined = typeof enumOptions === 'undefined';
   const isArray = Array.isArray(enumOptions);
   const arrayContainsOptionShapes = isArray
@@ -630,7 +686,7 @@ const validSchemaOptions = (enumOptions, schemaType) => {
     : false;
   const isEnumSchemaType = ['enum', 'multi-enum'].includes(schemaType);
   const shouldHaveSchemaOptions =
-    isEnumSchemaType && !isUndefined && enumOptions.length > 0;
+    isEnumSchemaType && !isUndefined && enumOptions && enumOptions.length > 0;
 
   const isValid =
     !isEnumSchemaType || (shouldHaveSchemaOptions && arrayContainsOptionShapes);
@@ -642,43 +698,66 @@ const validSchemaOptions = (enumOptions, schemaType) => {
       ? { enumOptions: [] }
       : {};
 
-  return [isValid, schemaOptionsMaybe];
+  return [
+    isValid,
+    schemaOptionsMaybe as
+      | Record<string, EnumOption[] | []>
+      | Record<string, never>,
+  ];
 };
 
 // listingFieldsConfig.filterConfig
 const filterTypes = ['SelectSingleFilter', 'SelectMultipleFilter'];
-const validFilterType = (filterType, schemaType) => {
+const validFilterType = (
+  filterType: string | undefined,
+  schemaType: string,
+): [boolean, Record<string, string> | Record<string, never>] => {
   const isEnumSchemaType = ['enum', 'multi-enum'].includes(schemaType);
-  const isUndefined = typeof searchMode === 'undefined';
-  const isKnownFilterType = filterTypes.includes(filterType);
+  const isUndefined = typeof filterType === 'undefined';
+  const isKnownFilterType = filterType
+    ? filterTypes.includes(filterType)
+    : false;
   const shouldHaveFilterType =
     isEnumSchemaType && (isKnownFilterType || isUndefined);
   const isValid = !isEnumSchemaType || shouldHaveFilterType;
   const filterTypeMaybe = shouldHaveFilterType
     ? { filterType: filterType || 'SelectMultipleFilter' }
     : {};
-  return [isValid, filterTypeMaybe];
+  return [
+    isValid,
+    filterTypeMaybe as Record<string, string> | Record<string, never>,
+  ];
 };
 
 const searchModes = ['has_all', 'has_any'];
-const validSearchMode = (searchMode, schemaType) => {
+const validSearchMode = (
+  searchMode: string | undefined,
+  schemaType: string,
+): [boolean, Record<string, string> | Record<string, never>] => {
   const isMultiEnumSchemaType = schemaType === 'multi-enum';
   const isUndefined = typeof searchMode === 'undefined';
-  const hasValidMode = searchModes.includes(searchMode);
+  const hasValidMode = searchMode ? searchModes.includes(searchMode) : false;
   const isSearchModeValid =
     isMultiEnumSchemaType && (isUndefined || hasValidMode);
   const isValid = !isMultiEnumSchemaType || isSearchModeValid;
   const searchModeMaybe = isSearchModeValid
     ? { searchMode: searchMode || 'has_all' }
     : {};
-  return [isValid, searchModeMaybe];
+  return [
+    isValid,
+    searchModeMaybe as Record<string, string> | Record<string, never>,
+  ];
 };
 
-const validFilterConfig = (config, schemaType) => {
+const validFilterConfig = (
+  config: Partial<FilterConfig> | undefined,
+  schemaType: string,
+): [boolean, { filterConfig?: FilterConfig }] => {
   const isUndefined = typeof config === 'undefined';
   if (isUndefined) {
     return [true, {}];
   }
+
   // Validate: indexForSearch, label, filterType, searchMode, group
   const [isValidIndexForSearch, indexForSearch] = validBoolean(
     'indexForSearch',
@@ -694,11 +773,11 @@ const validFilterConfig = (config, schemaType) => {
     config.searchMode,
     schemaType,
   );
-  const groupOptions = ['primary', 'secondary'];
+  const groupOptions = ['primary', 'secondary'] as const;
   const [isValidGroup, group] = validEnumString(
     'group',
-    config.group,
-    groupOptions,
+    config.group || 'primary',
+    groupOptions as unknown as string[],
     'primary',
   );
 
@@ -708,20 +787,25 @@ const validFilterConfig = (config, schemaType) => {
     isValidFilterType &&
     isValidSearchMode &&
     isValidGroup;
+
+  // Use spread operators like File 1 for cleaner code
   const validValue = {
     filterConfig: {
       ...indexForSearch,
       ...label,
       ...filterType,
       ...searchMode,
-      ...group,
-    },
+      ...(group && typeof group === 'object' ? group : {}),
+    } as FilterConfig,
   };
-  return [isValid, validValue];
+
+  return [!!isValid, validValue];
 };
 
 // listingFieldsConfig.showConfig
-const validShowConfig = config => {
+const validShowConfig = (
+  config: Partial<ShowConfig> | undefined,
+): [boolean, Record<string, ShowConfig>] => {
   const isUndefined = typeof config === 'undefined';
   if (isUndefined) {
     return [true, {}];
@@ -746,18 +830,32 @@ const validShowConfig = config => {
       ...label,
       ...isDetail,
       ...unselectedOptions,
-    },
+    } as unknown as ShowConfig,
   };
   return [isValid, validValue];
 };
 
 // numberConfig is passed along with listing fields that use the schema type `long`
-const validNumberConfig = config => {
+const validNumberConfig = (
+  config: { minimum?: number; maximum?: number } | undefined,
+): [boolean, { minimum: number; maximum: number; step: number }] => {
+  if (!config) {
+    return [false, { minimum: 0, maximum: 0, step: 1 }];
+  }
   const { minimum, maximum } = config;
-  const integerConfig = { minimum, maximum, step: 1 };
+  const integerConfig = {
+    minimum: minimum ?? 0,
+    maximum: maximum ?? 0,
+    step: 1,
+  };
 
   // Check if both minimum and maximum are integers
-  if (!Number.isInteger(minimum) || !Number.isInteger(maximum)) {
+  if (
+    minimum === undefined ||
+    maximum === undefined ||
+    !Number.isInteger(minimum) ||
+    !Number.isInteger(maximum)
+  ) {
     return [false, integerConfig];
   }
 
@@ -778,7 +876,14 @@ const validNumberConfig = config => {
   return [true, integerConfig];
 };
 
-const validUserShowConfig = config => {
+const validUserShowConfig = (
+  config:
+    | Partial<import('../types/config/configUser').UserFieldShowConfig>
+    | undefined,
+): [
+  boolean,
+  Record<string, import('../types/config/configUser').UserFieldShowConfig>,
+] => {
   const isUndefined = typeof config === 'undefined';
   if (isUndefined) {
     return [true, {}];
@@ -801,31 +906,56 @@ const validUserShowConfig = config => {
     isValidLabel && isValidDisplayInProfile && isValidUnselectedOptions;
   const validValue = {
     showConfig: {
-      ...label,
-      ...displayInProfile,
-      ...unselectedOptions,
-    },
+      label: (label.label as string) || '',
+      displayInProfile: (displayInProfile.displayInProfile as boolean) ?? true,
+      unselectedOptions:
+        (unselectedOptions.unselectedOptions as boolean) ?? true,
+    } as import('../types/config/configUser').UserFieldShowConfig,
   };
   return [isValid, validValue];
 };
 
 // listingFieldsConfig.saveConfig
-const validPlaceholderMessage = placeholderMessage => {
+const validPlaceholderMessage = (
+  placeholderMessage: string | undefined,
+): [boolean, Record<string, string> | Record<string, never>] => {
   const isUndefined = typeof placeholderMessage === 'undefined';
   const isString = typeof placeholderMessage === 'string';
   const isValid = isUndefined || isString;
-  const validValue = isValid ? { placeholderMessage } : {};
-  return [isValid, validValue];
+  const validValue =
+    isValid && placeholderMessage ? { placeholderMessage } : {};
+  return [
+    isValid,
+    validValue as Record<string, string> | Record<string, never>,
+  ];
 };
-const validRequiredMessage = requiredMessage => {
+const validRequiredMessage = (
+  requiredMessage: string | undefined,
+): [boolean, Record<string, string> | Record<string, never>] => {
   const isUndefined = typeof requiredMessage === 'undefined';
   const isString = typeof requiredMessage === 'string';
   const isValid = isUndefined || isString;
-  const validValue = isValid ? { requiredMessage } : {};
-  return [isValid, validValue];
+  const validValue = isValid && requiredMessage ? { requiredMessage } : {};
+  return [
+    isValid,
+    validValue as Record<string, string> | Record<string, never>,
+  ];
 };
 
-const validSaveConfig = config => {
+const validSaveConfig = (
+  config:
+    | (Partial<SaveConfig> & {
+        placeholderMessage?: string;
+        requiredMessage?: string;
+      })
+    | undefined,
+): [
+  boolean,
+  Record<
+    string,
+    SaveConfig & { placeholderMessage?: string; requiredMessage?: string }
+  >,
+] => {
   const isUndefined = typeof config === 'undefined';
   if (isUndefined) {
     return [true, {}];
@@ -851,15 +981,35 @@ const validSaveConfig = config => {
     isValidRequiredMessage;
   const validValue = {
     saveConfig: {
-      ...label,
-      ...placeholderMessage,
-      ...isRequired,
-      ...requiredMessage,
-    },
+      label: (label.label as string) || '',
+      isRequired: (isRequired.isRequired as boolean) ?? false,
+      ...(placeholderMessage.placeholderMessage
+        ? { placeholderMessage: placeholderMessage.placeholderMessage }
+        : {}),
+      ...(requiredMessage.requiredMessage
+        ? { requiredMessage: requiredMessage.requiredMessage }
+        : {}),
+    } as SaveConfig & { placeholderMessage?: string; requiredMessage?: string },
   };
   return [isValid, validValue];
 };
-const validUserSaveConfig = config => {
+const validUserSaveConfig = (
+  config:
+    | (Partial<import('../types/config/configUser').UserFieldSaveConfig> & {
+        placeholderMessage?: string;
+        requiredMessage?: string;
+      })
+    | undefined,
+): [
+  boolean,
+  Record<
+    string,
+    import('../types/config/configUser').UserFieldSaveConfig & {
+      placeholderMessage?: string;
+      requiredMessage?: string;
+    }
+  >,
+] => {
   const isUndefined = typeof config === 'undefined';
   if (isUndefined) {
     return [true, {}];
@@ -873,7 +1023,7 @@ const validUserSaveConfig = config => {
   // At this point, all user fields are required by default, and shown in signup by default.
   const [isValidIsRequired, isRequired] = validBoolean(
     'isRequired',
-    config.isRequired,
+    config.required,
     true,
   );
   const [isValidDisplayInSignUp, displayInSignUp] = validBoolean(
@@ -895,19 +1045,22 @@ const validUserSaveConfig = config => {
     saveConfig: {
       ...label,
       ...placeholderMessage,
-      ...isRequired,
+      required: isRequired.isRequired ?? true,
       ...displayInSignUp,
       ...requiredMessage,
+    } as import('../types/config/configUser').UserFieldSaveConfig & {
+      placeholderMessage?: string;
+      requiredMessage?: string;
     },
   };
   return [isValid, validValue];
 };
 
 const validListingFields = (
-  listingFields,
-  listingTypesInUse,
-  categoriesInUse,
-) => {
+  listingFields: ListingFields,
+  listingTypesInUse: ListingType[],
+  categoriesInUse: CategoryNode[],
+): ListingFields => {
   const keys = listingFields.map(d => d.key);
   const scopeOptions = ['public', 'private'];
   const validSchemaTypes = [
@@ -919,59 +1072,101 @@ const validListingFields = (
     'youtubeVideoUrl',
   ];
 
-  return listingFields.reduce((acc, data) => {
-    const schemaType = data.schemaType;
+  return listingFields.reduce(
+    (acc: ListingFields, data: ListingFields[number]) => {
+      const schemaType = data.schemaType;
 
-    const validationData = Object.entries(data).reduce(
-      (acc, entry) => {
-        const [name, value] = entry;
+      const validationData = Object.entries(data).reduce(
+        (validationAcc, entry) => {
+          const [name, value] = entry as [
+            keyof ListingFields[number],
+            ListingFields[number][keyof ListingFields[number]],
+          ];
 
-        // Validate each property
-        const [isValid, prop] =
-          name === 'key'
-            ? validKey(value, keys)
-            : name === 'scope'
-            ? validEnumString('scope', value, scopeOptions, 'public')
-            : name === 'numberConfig'
-            ? validNumberConfig(value)
-            : name === 'includeForListingTypes'
-            ? validListingTypesForBuiltInSetup(value, listingTypesInUse)
-            : name === 'listingTypeConfig'
-            ? validListingTypesForListingTypeConfig(value, listingTypesInUse)
-            : name === 'categoryConfig'
-            ? validListingTypesForCategoryConfig(value, categoriesInUse)
-            : name === 'schemaType'
-            ? validEnumString('schemaType', value, validSchemaTypes)
-            : name === 'enumOptions'
-            ? validSchemaOptions(value, schemaType)
-            : name === 'filterConfig'
-            ? validFilterConfig(value, schemaType)
-            : name === 'showConfig'
-            ? validShowConfig(value)
-            : name === 'saveConfig'
-            ? validSaveConfig(value)
-            : [true, { [name]: value }];
+          // Validate each property
+          const [isValid, prop] =
+            name === 'key'
+              ? validKey(value as ListingFields[number]['key'], keys)
+              : name === 'scope'
+              ? validEnumString(
+                  'scope',
+                  value as string,
+                  scopeOptions,
+                  'public',
+                )
+              : name === 'numberConfig'
+              ? validNumberConfig(
+                  value as ListingFields[number]['numberConfig'],
+                )
+              : name === 'listingTypeConfig'
+              ? validListingTypesForListingTypeConfig(
+                  value as ListingTypeConfig | undefined,
+                  listingTypesInUse.map(lt => lt.id),
+                )
+              : name === 'categoryConfig'
+              ? validListingTypesForCategoryConfig(
+                  value as CategoryConfig | undefined,
+                  categoriesInUse,
+                )
+              : name === 'schemaType'
+              ? validEnumString('schemaType', value as string, validSchemaTypes)
+              : name === 'enumOptions'
+              ? validSchemaOptions(
+                  value as EnumOption[] | undefined,
+                  schemaType,
+                )
+              : name === 'filterConfig'
+              ? validFilterConfig(
+                  value as Partial<FilterConfig> | undefined,
+                  schemaType,
+                )
+              : name === 'showConfig'
+              ? validShowConfig(value as Partial<ShowConfig> | undefined)
+              : name === 'saveConfig'
+              ? validSaveConfig(
+                  value as
+                    | (Partial<SaveConfig> & {
+                        placeholderMessage?: string;
+                        requiredMessage?: string;
+                      })
+                    | undefined,
+                )
+              : [true, { [name]: value }];
 
-        const hasFoundValid = !(acc.isValid === false || isValid === false);
-        // Let's warn about wrong data in listing extended data config
-        if (isValid === false) {
-          console.warn(
-            `Unsupported listing extended data configurations detected (${name}) in`,
-            data,
+          const hasFoundValid = !(
+            validationAcc.isValid === false || isValid === false
           );
-        }
+          // Let's warn about wrong data in listing extended data config
+          if (isValid === false) {
+            console.warn(
+              `Unsupported listing extended data configurations detected (${name}) in`,
+              data,
+            );
+          }
 
-        return { config: { ...acc.config, ...prop }, isValid: hasFoundValid };
-      },
-      { config: {}, isValid: true },
-    );
+          return {
+            config: {
+              ...validationAcc.config,
+              ...(typeof prop === 'object' && prop !== null ? prop : {}),
+            },
+            isValid: hasFoundValid,
+          };
+        },
+        { config: {} as Partial<ListingFields[number]>, isValid: true },
+      );
 
-    if (validationData.isValid) {
-      return [...acc, validationData.config];
-    } else {
-      return acc;
-    }
-  }, []);
+      if (
+        validationData.isValid &&
+        validationData.config.key &&
+        validationData.config.label
+      ) {
+        return [...acc, validationData.config as ListingFields[number]];
+      } else {
+        return acc;
+      }
+    },
+    [],
+  );
 };
 
 //need to handle the union types , default is hostedUserTypes
@@ -984,8 +1179,13 @@ const validUserTypes = (userTypes: ReturnType<typeof restructureUserTypes>) => {
   return validTypes;
 };
 
-const validUserFields = (userFields, userTypesInUse) => {
-  const keys = userFields.map(d => d.key);
+const validUserFields = (
+  userFields: import('../types/config/configUser').UserFieldConfigItem[],
+  userTypesInUse: string[] | null,
+): import('../types/config/configUser').UserFieldConfigItem[] => {
+  const keys = userFields.map(
+    (d: import('../types/config/configUser').UserFieldConfigItem) => d.key,
+  );
   const scopeOptions = ['public', 'private', 'protected', 'metadata'];
   const validSchemaTypes = [
     'enum',
@@ -996,149 +1196,235 @@ const validUserFields = (userFields, userTypesInUse) => {
     'youtubeVideoUrl',
   ];
 
-  return userFields.reduce((acc, data) => {
-    const schemaType = data.schemaType;
+  return userFields.reduce(
+    (acc: import('../types/config/configUser').UserFieldConfigItem[], data) => {
+      const schemaType = data.schemaType;
 
-    const validationData = Object.entries(data).reduce(
-      (acc, entry) => {
-        const [name, value] = entry;
+      const validationData = Object.entries(data).reduce(
+        (validationAcc, entry) => {
+          const [name, value] = entry;
 
-        // Validate each property
-        const [isValid, prop] =
-          name === 'key'
-            ? validKey(value, keys)
-            : name === 'label'
-            ? validLabel(value)
-            : name === 'scope'
-            ? validEnumString('scope', value, scopeOptions, 'public')
-            : name === 'schemaType'
-            ? validEnumString('schemaType', value, validSchemaTypes)
-            : name === 'enumOptions'
-            ? validSchemaOptions(value, schemaType)
-            : name === 'showConfig'
-            ? validUserShowConfig(value)
-            : name === 'userTypeConfig'
-            ? validUserTypesForUserConfig(value, userTypesInUse)
-            : name === 'saveConfig'
-            ? validUserSaveConfig(value)
-            : [true, value];
+          // Validate each property
+          const [isValid, prop] =
+            name === 'key'
+              ? validKey(value as string, keys)
+              : name === 'label'
+              ? validLabel(value)
+              : name === 'scope'
+              ? validEnumString(
+                  'scope',
+                  value as string,
+                  scopeOptions,
+                  'public',
+                )
+              : name === 'schemaType'
+              ? validEnumString('schemaType', value as string, validSchemaTypes)
+              : name === 'enumOptions'
+              ? validSchemaOptions(
+                  value as EnumOption[] | undefined,
+                  schemaType,
+                )
+              : name === 'showConfig'
+              ? validUserShowConfig(value)
+              : name === 'userTypeConfig'
+              ? validUserTypesForUserConfig(
+                  value as {
+                    limitToUserTypeIds?: boolean;
+                    userTypeIds?: string[];
+                  },
+                  userTypesInUse,
+                )
+              : name === 'saveConfig'
+              ? validUserSaveConfig(value)
+              : [true, { [name]: value }];
 
-        const hasFoundValid = !(acc.isValid === false || isValid === false);
-        // Let's warn about wrong data in listing extended data config
-        if (isValid === false) {
-          console.warn(
-            `Unsupported user extended data configurations detected (${name}) in`,
-            data,
+          const hasFoundValid = !(
+            validationAcc.isValid === false || isValid === false
           );
-        }
+          // Let's warn about wrong data in listing extended data config
+          if (isValid === false) {
+            console.warn(
+              `Unsupported user extended data configurations detected (${name}) in`,
+              data,
+            );
+          }
 
-        return { config: { ...acc.config, ...prop }, isValid: hasFoundValid };
-      },
-      { config: {}, isValid: true },
-    );
+          return {
+            config: {
+              ...validationAcc.config,
+              ...(typeof prop === 'object' && prop !== null ? prop : {}),
+            },
+            isValid: hasFoundValid,
+          };
+        },
+        {
+          config: {} as Partial<
+            import('../types/config/configUser').UserFieldConfigItem
+          >,
+          isValid: true,
+        } as {
+          config: Partial<
+            import('../types/config/configUser').UserFieldConfigItem
+          >;
+          isValid: boolean;
+        },
+      );
 
-    return validationData.isValid ? [...acc, validationData.config] : acc;
-  }, []);
+      return validationData.isValid
+        ? [
+            ...acc,
+            validationData.config as import('../types/config/configUser').UserFieldConfigItem,
+          ]
+        : acc;
+    },
+    [],
+  );
 };
 
 ///////////////////////////////////
 // Validate listing types config //
 ///////////////////////////////////
 
-const validListingTypes = listingTypes => {
+const validListingTypes = (
+  listingTypes: Array<{
+    listingType: string;
+    label: string;
+    transactionType: TransactionType;
+    priceVariations?: { enabled: boolean };
+    [key: string]: unknown;
+  }>,
+): Array<{
+  listingType: string;
+  label: string;
+  transactionType: TransactionType;
+  priceVariations?: { enabled: boolean };
+  [key: string]: unknown;
+}> => {
   // Check what transaction processes this client app supports
   const supportedProcessesInfo = getSupportedProcessesInfo();
 
-  const validTypes = listingTypes.reduce((validConfigs, listingType) => {
-    const {
-      listingType: type,
-      label,
-      transactionType,
-      priceVariations,
-      ...restOfListingType
-    } = listingType;
-    const {
-      process: processName,
-      alias,
-      unitType,
-      ...restOfTransactionType
-    } = transactionType;
-
-    const isSupportedProcessName = supportedProcessesInfo.find(
-      p => p.name === processName,
-    );
-    const isSupportedProcessAlias = supportedProcessesInfo.find(
-      p => p.alias === alias,
-    );
-    const isSupportedUnitType = supportedProcessesInfo.find(p =>
-      p.unitTypes.includes(unitType),
-    );
-
-    const priceVariationTypeMaybe = isBookingProcessAlias(alias)
-      ? { priceVariations: { enabled: priceVariations?.enabled } }
-      : {};
-
-    if (
-      isSupportedProcessName &&
-      isSupportedProcessAlias &&
-      isSupportedUnitType
-    ) {
-      return [
-        ...validConfigs,
-        {
-          listingType: type,
-          label,
-          transactionType: {
-            process: processName,
-            alias,
-            unitType,
-            ...restOfTransactionType,
-          },
-          ...priceVariationTypeMaybe,
-          // e.g. stockType, availabilityType,...
-          ...restOfListingType,
-        },
-      ];
-    }
-    console.warn(
-      'Unsupported listing type configurations detected',
+  const validTypes = listingTypes.reduce(
+    (
+      validConfigs: Array<{
+        listingType: string;
+        label: string;
+        transactionType: TransactionType;
+        priceVariations?: { enabled: boolean };
+        [key: string]: unknown;
+      }>,
       listingType,
-    );
-    return validConfigs;
-  }, []);
+    ) => {
+      const {
+        listingType: type,
+        label,
+        transactionType,
+        priceVariations,
+        ...restOfListingType
+      } = listingType;
+      const {
+        process: processName,
+        alias,
+        unitType,
+        ...restOfTransactionType
+      } = transactionType;
+
+      const isSupportedProcessName = supportedProcessesInfo.find(
+        p => p.name === processName,
+      );
+      const isSupportedProcessAlias = supportedProcessesInfo.find(
+        p => p.alias === alias,
+      );
+      const isSupportedUnitType = unitType
+        ? supportedProcessesInfo.find(
+            p => Array.isArray(p.unitTypes) && p.unitTypes.includes(unitType),
+          )
+        : null;
+
+      const priceVariationTypeMaybe =
+        isBookingProcessAlias(alias) && priceVariations?.enabled !== undefined
+          ? { priceVariations: { enabled: priceVariations.enabled } }
+          : {};
+
+      if (
+        isSupportedProcessName &&
+        isSupportedProcessAlias &&
+        isSupportedUnitType
+      ) {
+        return [
+          ...validConfigs,
+          {
+            listingType: type,
+            label,
+            transactionType: {
+              process: processName,
+              alias,
+              unitType,
+              ...restOfTransactionType,
+            },
+            ...(priceVariationTypeMaybe.priceVariations
+              ? priceVariationTypeMaybe
+              : {}),
+            // e.g. stockType, availabilityType,...
+            ...restOfListingType,
+          },
+        ];
+      }
+      console.warn(
+        'Unsupported listing type configurations detected',
+        listingType,
+      );
+      return validConfigs;
+    },
+    [],
+  );
 
   return validTypes;
 };
 
-export const displayPrice = listingTypeConfig => {
+export const displayPrice = (
+  listingTypeConfig: ListingType | undefined,
+): boolean => {
   return listingTypeConfig?.defaultListingFields?.price !== false;
 };
 
-export const displayLocation = listingTypeConfig => {
+export const displayLocation = (
+  listingTypeConfig: ListingType | undefined,
+): boolean => {
   return listingTypeConfig?.defaultListingFields?.location !== false;
 };
 
-export const displayDeliveryPickup = listingTypeConfig => {
+export const displayDeliveryPickup = (
+  listingTypeConfig: ListingType | undefined,
+): boolean => {
   return listingTypeConfig?.defaultListingFields?.pickup !== false;
 };
 
-export const displayDeliveryShipping = listingTypeConfig => {
+export const displayDeliveryShipping = (
+  listingTypeConfig: ListingType | undefined,
+): boolean => {
   return listingTypeConfig?.defaultListingFields?.shipping !== false;
 };
 
-export const requireListingImage = listingTypeConfig => {
+export const requireListingImage = (
+  listingTypeConfig: ListingType | undefined,
+): boolean => {
   return listingTypeConfig?.defaultListingFields?.images !== false;
 };
 
-export const requirePayoutDetails = listingTypeConfig => {
+export const requirePayoutDetails = (
+  listingTypeConfig: ListingType | undefined,
+): boolean => {
   return listingTypeConfig?.defaultListingFields?.payoutDetails !== false;
 };
 
-export const isPriceVariationsEnabled = (publicData, listingTypeConfig) => {
+export const isPriceVariationsEnabled = (
+  publicData: { priceVariationsEnabled?: boolean } | undefined,
+  listingTypeConfig: ListingType | undefined,
+): boolean => {
   // Note: publicData contains priceVariationsEnabled if listing is created with priceVariations enabled.
   return publicData?.priceVariationsEnabled != null
-    ? publicData?.priceVariationsEnabled
-    : listingTypeConfig?.priceVariations?.enabled;
+    ? publicData.priceVariationsEnabled
+    : listingTypeConfig?.priceVariations?.enabled ?? false;
 };
 
 ///////////////////////////////////////
@@ -1188,31 +1474,35 @@ const restructureListingFields = (hostedListingFields: ListingFields) => {
         ? { enumOptions }
         : {};
       const numberConfigMaybe = schemaType === 'long' ? { numberConfig } : {};
-      const { required: isRequired, ...restSaveConfig } = saveConfig;
+      const { required: isRequired, ...restSaveConfig } = (saveConfig ||
+        {}) as { required?: boolean; [key: string]: unknown };
 
       return key
-        ? {
+        ? ({
             key,
-            scope,
+            label: defaultLabel,
+            scope: scope || 'public',
             schemaType,
             ...enumOptionsMaybe,
             ...numberConfigMaybe,
             filterConfig: {
+              label: defaultLabel,
               ...filterConfig,
-              label: filterConfig.label || defaultLabel,
-            },
+            } as FilterConfig,
             showConfig: {
+              label: defaultLabel,
+              isDetail: true,
+              unselectedOptions: true,
               ...showConfig,
-              label: showConfig.label || defaultLabel,
-            },
+            } as ShowConfig,
             saveConfig: {
+              label: defaultLabel,
+              isRequired: isRequired ?? false,
               ...restSaveConfig,
-              isRequired,
-              label: saveConfig.label || defaultLabel,
-            },
+            } as SaveConfig,
             categoryConfig,
             ...rest,
-          }
+          } as ListingFields[number])
         : null;
     }) || []
   );
@@ -1222,14 +1512,21 @@ const restructureListingFields = (hostedListingFields: ListingFields) => {
 // Restructure hosted user config //
 ///////////////////////////////////////
 
-const restructureUserTypes = (hostedUserTypes: hostedUserTypesTypes) => {
+const restructureUserTypes = (
+  hostedUserTypes: hostedUserTypesTypes,
+): Array<{ userType: string; label: string; [key: string]: unknown }> => {
   return hostedUserTypes.map(userType => {
-    const { id, ...rest } = userType;
-    return { userType: id, ...rest };
+    // UserTypeConfigItem from hosted assets has 'id' but we need 'userType'
+    const userTypeId =
+      'id' in userType ? (userType as any).id : userType.userType;
+    const { id, ...rest } = userType as any;
+    return { userType: userTypeId, ...rest };
   });
 };
 
-const restructureUserFields = (hostedUserFields: hostedUserFieldsTypes) => {
+const restructureUserFields = (
+  hostedUserFields: hostedUserFieldsTypes['userFields'],
+) => {
   return (
     hostedUserFields?.map(userField => {
       const {
@@ -1238,35 +1535,44 @@ const restructureUserFields = (hostedUserFields: hostedUserFieldsTypes) => {
         schemaType,
         enumOptions,
         label,
-        showConfig = {},
-        saveConfig = {},
-        userTypeConfig = {},
+        showConfig,
+        saveConfig,
+        userTypeConfig,
         ...rest
       } = userField;
       const defaultLabel = label || key;
       const enumOptionsMaybe = ['enum', 'multi-enum'].includes(schemaType)
         ? { enumOptions }
         : {};
-      const { required: isRequired, ...restSaveConfig } = saveConfig;
+      const { required: isRequired, ...restSaveConfig } = (saveConfig ??
+        {}) as { required?: boolean; [key: string]: unknown };
 
       return key
-        ? {
+        ? ({
             key,
-            scope,
+            scope: scope || 'public',
             schemaType,
             ...enumOptionsMaybe,
-            showConfig: {
-              ...showConfig,
-              label: showConfig.label || defaultLabel,
-            },
-            saveConfig: {
-              ...restSaveConfig,
-              isRequired,
-              label: saveConfig.label || defaultLabel,
-            },
-            userTypeConfig,
+            showConfig: showConfig
+              ? ({
+                  label: showConfig.label || defaultLabel,
+                  displayInProfile:
+                    (showConfig as any).displayInProfile ?? true,
+                  unselectedOptions:
+                    (showConfig as any).unselectedOptions ?? true,
+                } as import('../types/config/configUser').UserFieldShowConfig)
+              : undefined,
+            saveConfig: saveConfig
+              ? {
+                  label: saveConfig.label || defaultLabel,
+                  required: isRequired ?? true,
+                  displayInSignUp: true,
+                  ...restSaveConfig,
+                }
+              : undefined,
+            userTypeConfig: userTypeConfig ?? {},
             ...rest,
-          }
+          } as import('../types/config/configUser').UserFieldConfigItem)
         : null;
     }) || []
   );
@@ -1341,7 +1647,11 @@ const validateCategoryConfig = (
 // Merge 2 arrays and pick only unique objects according to "key" property
 // Note: This solution prefers objects from the second array
 //       I.e. default configs override hosted asset configs if they have the same key.
-const union = (arr1, arr2, key) => {
+const union = <T extends string, U extends Record<T, any>>(
+  arr1: U[],
+  arr2: U[],
+  key: T,
+): U[] => {
   const all = [...arr1, ...arr2];
   const map = new Map(all.map(obj => [obj[key], obj]));
   return [...map.values()];
@@ -1380,22 +1690,54 @@ const mergeListingConfig = (
   // Otherwise, use listing types and fields from hosted assets.
   const shouldMerge = mergeDefaultTypesAndFieldsForDebugging(false);
   const listingTypes = shouldMerge
-    ? union(hostedListingTypes, defaultListingTypes, 'listingType')
+    ? union(
+        hostedListingTypes.filter(itm => itm !== null),
+        defaultListingTypes,
+        'listingType',
+      )
     : hostedListingTypes;
   const listingFields = shouldMerge
-    ? union(hostedListingFields, defaultListingFields, 'key')
-    : hostedListingFields;
+    ? union(
+        hostedListingFields.filter(
+          (itm): itm is ListingFields[number] => itm !== null,
+        ),
+        defaultListingFields,
+        'key',
+      )
+    : hostedListingFields.filter(
+        (itm): itm is ListingFields[number] => itm !== null,
+      );
 
-  const listingTypesInUse = listingTypes.map(lt => `${lt.listingType}`);
+  const validListingTypesArray = listingTypes
+    .filter((lt): lt is NonNullable<typeof lt> => lt !== null)
+    .map(lt => ({
+      listingType: lt.listingType,
+      label: '',
+      transactionType: lt.transactionType,
+      ...(lt as any),
+    }));
+
+  const listingTypesInUseForFields: ListingType[] = validListingTypesArray.map(
+    lt => ({
+      id: lt.listingType,
+      label: '',
+      transactionProcess: {
+        name: lt.transactionType?.process || '',
+        alias: lt.transactionType?.alias || '',
+      },
+      unitType: lt.transactionType?.unitType,
+      defaultListingFields: {} as any,
+    }),
+  );
 
   return {
     ...rest,
     listingFields: validListingFields(
       listingFields,
-      listingTypesInUse,
-      categoriesInUse,
+      listingTypesInUseForFields,
+      categoriesInUse || [],
     ),
-    listingTypes: validListingTypes(listingTypes),
+    listingTypes: validListingTypes(validListingTypesArray),
     enforceValidListingType: defaultConfigs.listing.enforceValidListingType,
   };
 };
@@ -1421,7 +1763,7 @@ const mergeUserConfig = (
     ? union(hostedUserTypes, defaultUserTypes, 'userType')
     : hostedUserTypes;
   const userFields = shouldMerge
-    ? union(hostedUserFields, defaultUserFields, 'key')
+    ? union(hostedUserFields.filter(itm => itm !== null), defaultUserFields as any, 'key')
     : hostedUserFields;
 
   // To include user type validation (if you have user types in your default configuration),
@@ -1429,7 +1771,7 @@ const mergeUserConfig = (
   const userTypesInUse = userTypes.map(ut => `${ut.userType}`);
   return {
     userTypes: validUserTypes(userTypes),
-    userFields: validUserFields(userFields, userTypesInUse),
+    userFields: validUserFields(userFields.filter(itm => itm !== null), userTypesInUse),
   };
 };
 
@@ -1437,8 +1779,21 @@ const mergeUserConfig = (
 // Validate Default filters //
 //////////////////////////////
 
-const validCategoryConfig = (config, categoryConfiguration) => {
-  const { enabled = true } = config;
+const validCategoryConfig = (
+  config: { enabled?: boolean } | undefined,
+  categoryConfiguration: {
+    key: string;
+    scope: string;
+    categoryLevelKeys: string[];
+  },
+): {
+  key: string;
+  schemaType: 'category';
+  scope: string;
+  isNestedEnum: boolean;
+  nestedParams: string[];
+} | null => {
+  const { enabled = true } = config || {};
 
   if (!enabled) {
     return null;
@@ -1455,8 +1810,16 @@ const validCategoryConfig = (config, categoryConfiguration) => {
   return { key, schemaType: 'category', scope, isNestedEnum, nestedParams };
 };
 
-const validListingTypeSearchConfig = (config, listingTypeConfig) => {
-  const { enabled = true } = config;
+const validListingTypeSearchConfig = (
+  config: { enabled?: boolean } | undefined,
+  listingTypeConfig: Array<{ listingType: string; label: string }>,
+): {
+  key: string;
+  schemaType: 'listingType';
+  scope: string;
+  options: Array<{ option: string; label: string }>;
+} | null => {
+  const { enabled = true } = config || {};
 
   if (!enabled) {
     return null;
@@ -1475,13 +1838,28 @@ const validListingTypeSearchConfig = (config, listingTypeConfig) => {
   };
 };
 
-const validDatesConfig = config => {
+const validDatesConfig = (
+  config:
+    | {
+        enabled?: boolean;
+        label?: string;
+        dateRangeMode?: string;
+        availability?: string;
+      }
+    | undefined,
+): {
+  key: string;
+  schemaType: 'dates';
+  label: string;
+  availability: string;
+  dateRangeMode: string;
+} | null => {
   const {
     enabled = true,
     label = 'Dates',
     dateRangeMode = 'day',
     availability = 'time-full',
-  } = config;
+  } = config || {};
   const isValidLabel = typeof label === 'string';
   const isValidMode = ['day', 'night'].includes(dateRangeMode);
   const isValidAvailability = ['time-full', 'time-partial'].includes(
@@ -1501,8 +1879,10 @@ const validDatesConfig = config => {
   };
 };
 
-const validSeatsConfig = config => {
-  const { enabled = true, label = 'Seats' } = config;
+const validSeatsConfig = (
+  config: { enabled?: boolean; label?: string } | undefined,
+): { key: string; schemaType: 'seats'; label: string } | null => {
+  const { enabled = true, label = 'Seats' } = config || {};
   const isValidLabel = typeof label === 'string';
 
   if (!(enabled && isValidLabel)) {
@@ -1512,14 +1892,31 @@ const validSeatsConfig = config => {
   return { key: 'seats', schemaType: 'seats', label };
 };
 
-const validPriceConfig = config => {
+const validPriceConfig = (
+  config:
+    | {
+        enabled?: boolean;
+        label?: string;
+        min?: number;
+        max?: number;
+        step?: number;
+      }
+    | undefined,
+): {
+  key: string;
+  schemaType: 'price';
+  label: string;
+  min: number;
+  max: number;
+  step: number;
+} | null => {
   const {
     enabled = true,
     label = 'Price',
     min = 0,
     max = 1000,
     step = 5,
-  } = config;
+  } = config || {};
   const isValidLabel = typeof label === 'string';
   const isValidMin = typeof min === 'number';
   const isValidMax = typeof max === 'number';
@@ -1540,8 +1937,10 @@ const validPriceConfig = config => {
     : null;
 };
 
-const validKeywordsConfig = config => {
-  const { enabled = true } = config;
+const validKeywordsConfig = (
+  config: { enabled?: boolean } | undefined,
+): { key: string; schemaType: 'keywords' } | null => {
+  const { enabled = true } = config || {};
 
   if (!enabled) {
     return null;
@@ -1551,43 +1950,83 @@ const validKeywordsConfig = config => {
 };
 
 const validDefaultFilters = (
-  defaultFilters,
-  categoryConfiguration,
-  listingTypeConfig,
-) => {
-  return defaultFilters
-    .map(data => {
-      const schemaType = data.schemaType;
-      return schemaType === 'category'
-        ? validCategoryConfig(data, categoryConfiguration)
-        : schemaType === 'listingType'
-        ? validListingTypeSearchConfig(data, listingTypeConfig)
-        : schemaType === 'dates'
-        ? validDatesConfig(data)
-        : schemaType === 'seats'
-        ? validSeatsConfig(data)
-        : schemaType === 'price'
-        ? validPriceConfig(data)
-        : schemaType === 'keywords'
-        ? validKeywordsConfig(data)
-        : data;
-    })
-    .filter(Boolean);
+  defaultFilters: Array<DefaultFilter>,
+  categoryConfiguration: {
+    key: string;
+    scope: string;
+    categoryLevelKeys: string[];
+  },
+  listingTypeConfig: Array<{ listingType: string; label: string }>,
+): DefaultFilter[] => {
+  const results = defaultFilters.map(data => {
+    const schemaType = data.schemaType;
+    if (schemaType === 'category') {
+      const categoryResult = validCategoryConfig(
+        data as { enabled?: boolean },
+        categoryConfiguration,
+      );
+      return categoryResult
+        ? ({ ...categoryResult, enabled: true } as unknown as DefaultFilter)
+        : null;
+    } else if (schemaType === 'listingType') {
+      const listingTypeResult = validListingTypeSearchConfig(
+        data as { enabled?: boolean },
+        listingTypeConfig,
+      );
+      return listingTypeResult
+        ? ({ ...listingTypeResult, enabled: true } as unknown as DefaultFilter)
+        : null;
+    } else if (schemaType === 'dates') {
+      const datesResult = validDatesConfig(
+        data as {
+          enabled?: boolean;
+          label?: string;
+          dateRangeMode?: string;
+          availability?: string;
+        },
+      );
+      return datesResult
+        ? ({
+            ...datesResult,
+            enabled: true,
+            label: datesResult.label || 'Dates',
+          } as DefaultFilter)
+        : null;
+    } else if (schemaType === 'seats') {
+      return validSeatsConfig(data as { enabled?: boolean; label?: string });
+    } else if (schemaType === 'price') {
+      return validPriceConfig(
+        data as {
+          enabled?: boolean;
+          label?: string;
+          min?: number;
+          max?: number;
+          step?: number;
+        },
+      );
+    } else if (schemaType === 'keywords') {
+      return validKeywordsConfig(data as { enabled?: boolean });
+    }
+    return null;
+  });
+  return results.filter((filter): filter is DefaultFilter => filter !== null);
 };
 
 //////////////////////////
 // Validate sort config //
 //////////////////////////
 
-const validSortConfig = config => {
-  const active = typeof config.active === 'boolean' ? config.active : true;
-  const queryParamName = config.queryParamName || 'sort';
-  const relevanceKey = config.relevanceKey || 'relevance';
-  const relevanceFilter = config.relevanceFilter || 'keywords';
-  const conflictingFilters = config.conflictingFilters || [];
-  const optionsRaw = config.options || [];
+const validSortConfig = (
+  config: Partial<SortConfig> | undefined,
+): SortConfig => {
+  const active = typeof config?.active === 'boolean' ? config.active : true;
+  const queryParamName = config?.queryParamName || 'sort';
+  const relevanceKey = config?.relevanceKey || 'relevance';
+  const relevanceFilter = config?.relevanceFilter || 'keywords';
+  const conflictingFilters = config?.conflictingFilters || [];
+  const optionsRaw = config?.options || [];
   const options = optionsRaw.filter(
-    o => !!o.key && !!(o.label || o.labelTranslationKey),
+    (o: any) => !!o.key && !!(o.label || o.labelTranslationKey),
   );
   return {
     active,
@@ -1600,10 +2039,15 @@ const validSortConfig = config => {
 };
 
 const mergeSearchConfig = (
-  hostedSearchConfig,
-  defaultSearchConfig,
-  categoryConfiguration,
-  listingTypeConfig,
+  hostedSearchConfig: SearchConfig | undefined,
+  defaultSearchConfig: SearchConfig,
+  categoryConfiguration: {
+    key: string;
+    scope: string;
+    categoryLevelKeys: string[];
+    categories: CategoryNode[];
+  },
+  listingTypeConfig: Array<{ listingType: string; label: string }>,
 ) => {
   // The sortConfig is not yet configurable through Console / hosted assets,
   // but other default search configs come from hosted assets
@@ -1639,7 +2083,7 @@ const mergeSearchConfig = (
       : [];
   const keywordsFilterMaybe =
     keywordsFilter?.enabled === true
-      ? [{ key: 'keywords', schemaType: 'keywords' }]
+      ? [{ key: 'keywords', schemaType: 'keywords' as const }]
       : defaultSearchConfig.keywordsFilter
       ? [defaultSearchConfig.keywordsFilter]
       : [];
@@ -1668,7 +2112,7 @@ const mergeSearchConfig = (
   return {
     mainSearch: { searchType },
     defaultFilters: validDefaultFilters(
-      defaultFilters,
+      defaultFilters.filter(itm => itm !== undefined && itm !== null),
       categoryConfiguration,
       listingTypeConfig,
     ),

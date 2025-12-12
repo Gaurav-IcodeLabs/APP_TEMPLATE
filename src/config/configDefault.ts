@@ -135,6 +135,6 @@ const defaultConfig = {
     postalCode: null, // '00130',
     streetAddress: null, // 'Erottajankatu 19 B',
   },
-};
+} as const;
 
 export default defaultConfig;
