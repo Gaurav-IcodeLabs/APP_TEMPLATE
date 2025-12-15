@@ -11,7 +11,7 @@ const loggedInAs = (authInfo: AuthInfo) => authInfo?.isLoggedInAs === true;
 // ================ Initial State ================ //
 
 const initialState = {
-  isAuthenticated: false,
+  isAuthenticated: null as boolean | null,
 
   // is marketplace operator logged in as a marketplace user
   isLoggedInAs: false,

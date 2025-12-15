@@ -1,11 +1,11 @@
-import { useCallback, useEffect } from 'react';
-import { Text } from 'react-native';
 import { ConfigurationProvider } from '@context/configurationContext';
-import { useAppDispatch, useTypedSelector } from '@redux/store';
 import {
   appConfigSelector,
   fetchAppAssets,
 } from '@redux/slices/hostedAssets.slice';
+import { store, useAppDispatch, useTypedSelector } from '@redux/store';
+import { useEffect } from 'react';
+import { Text } from 'react-native';
 import { hideSplash } from 'react-native-splash-view';
 
 const Root = () => {
@@ -19,9 +19,13 @@ const Root = () => {
 
   useEffect(() => {
     dispatch(fetchAppAssets());
+
     setTimeout(() => {
-      hideSplash();
-    }, 5000);
+      const isAuthenticated = store.getState()?.auth?.isAuthenticated;
+      if (isAuthenticated === null) {
+        hideSplash();
+      }
+    }, 10000);
   }, [dispatch]);
 
   return (
