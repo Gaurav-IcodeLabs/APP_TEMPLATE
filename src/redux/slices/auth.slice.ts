@@ -5,7 +5,7 @@ import {
   createSlice,
 } from '@reduxjs/toolkit';
 import { hideSplash } from 'react-native-splash-view';
-import { AuthInfo } from '../../types/auth';
+import { AuthInfo, AuthState, SignupParams, LoginParams, StorableError } from '../../types/auth';
 import { storableError } from '../../util';
 import { RootState } from '../store';
 import { fetchCurrentUser } from './user.slice';
@@ -15,35 +15,19 @@ const loggedInAs = (authInfo: AuthInfo) => authInfo?.isLoggedInAs === true;
 
 // ================ Initial State ================ //
 
-const initialState = {
-  isAuthenticated: null as boolean | null,
-
-  // is marketplace operator logged in as a marketplace user
+const initialState: AuthState = {
+  isAuthenticated: null,
   isLoggedInAs: false,
-
-  // scopes associated with current token
-  authScopes: [] as string[],
-
-  // auth info
+  authScopes: [],
   authInfoLoaded: false,
   authInfoInProgress: false,
-  authInfoError: null as any,
-
-  // login
-  loginError: null as any,
+  authInfoError: null,
+  loginError: null,
   loginInProgress: false,
-
-  // logout
-  logoutError: null as any,
+  logoutError: null,
   logoutInProgress: false,
-
-  // signup
-  signupError: null as any,
+  signupError: null,
   signupInProgress: false,
-
-  // confirm (create use with idp)
-  confirmError: null as any,
-  confirmInProgress: false,
 };
 
 // ================ Async Thunks ================ //
@@ -255,16 +239,70 @@ export const fetchAuthenticationState = createAsyncThunk<AuthInfo, void, Thunk>(
   },
 );
 
-export const login = createAsyncThunk<{}, any, Thunk>(
-  'auth/loginStatus',
+export const login = createAsyncThunk<{}, LoginParams, Thunk>(
+  'auth/login',
   async (params, { extra: sdk, rejectWithValue }) => {
     try {
       const currentUser = await sdk.login(params);
       console.log('currentUser', currentUser);
       return currentUser;
     } catch (error: any) {
-      console.log('error', error);
+      console.log('login error', error);
       return rejectWithValue(storableError(error));
+    }
+  },
+);
+
+export const signup = createAsyncThunk<{}, SignupParams, Thunk>(
+  'auth/signup',
+  async (params, { dispatch, extra: sdk, rejectWithValue }) => {
+    try {
+      // Create the signup parameters with default values
+      const signupParams = {
+        ...params,
+        displayName: params.displayName || `${params.firstName} ${params.lastName}`,
+        publicData: {
+          userType: 'customer' as const,
+          ...params.publicData,
+        },
+      };
+
+      console.log('Creating user with params:', signupParams);
+      
+      // Create the user
+      const res = await sdk.currentUser.create(signupParams);
+      console.log('User created successfully:', res);
+
+      // Automatically login after successful signup
+      await sdk.login({
+        username: params.email,
+        password: params.password,
+      });
+
+      console.log('Auto-login successful');
+
+      // Refresh auth info to update Redux state
+      await dispatch(fetchAuthenticationState());
+
+      return res;
+    } catch (error: any) {
+      console.log('signup error', error);
+      const message = error?.message || 'Signup failed';
+      const statusCode = error?.response?.status || error?.status;
+      return rejectWithValue(storableError({ ...error, message, status: statusCode }));
+    }
+  },
+);
+
+export const logout = createAsyncThunk<{}, void, Thunk>(
+  'auth/logout',
+  async (_, { extra: sdk, rejectWithValue }) => {
+    try {
+      await sdk.logout();
+      return {};
+    } catch (error: any) {
+      const message = error instanceof Error ? error.message : 'Logout failed';
+      return rejectWithValue(storableError({ message }));
     }
   },
 );
@@ -298,8 +336,55 @@ const authSlice = createSlice({
       })
       .addCase(fetchAuthenticationState.rejected, (state, action) => {
         state.authInfoInProgress = false;
-        state.authInfoError = action.payload;
+        state.authInfoError = action.payload as StorableError;
         state.isAuthenticated = false;
+      });
+
+    // Login
+    builder
+      .addCase(login.pending, state => {
+        state.loginInProgress = true;
+        state.loginError = null;
+      })
+      .addCase(login.fulfilled, state => {
+        state.loginInProgress = false;
+        state.isAuthenticated = true;
+      })
+      .addCase(login.rejected, (state, action) => {
+        state.loginInProgress = false;
+        state.loginError = action.payload as StorableError;
+      });
+
+    // Signup
+    builder
+      .addCase(signup.pending, state => {
+        state.signupInProgress = true;
+        state.signupError = null;
+      })
+      .addCase(signup.fulfilled, state => {
+        state.signupInProgress = false;
+        state.isAuthenticated = true;
+      })
+      .addCase(signup.rejected, (state, action) => {
+        state.signupInProgress = false;
+        state.signupError = action.payload as StorableError;
+      });
+
+    // Logout
+    builder
+      .addCase(logout.pending, state => {
+        state.logoutInProgress = true;
+        state.logoutError = null;
+      })
+      .addCase(logout.fulfilled, state => {
+        state.logoutInProgress = false;
+        state.isAuthenticated = false;
+        state.isLoggedInAs = false;
+        state.authScopes = [];
+      })
+      .addCase(logout.rejected, (state, action) => {
+        state.logoutInProgress = false;
+        state.logoutError = action.payload as StorableError;
       });
     // // Login
     // builder
@@ -386,6 +471,24 @@ export const selectAuthInfoInProgress = (state: RootState) =>
   state.auth.authInfoInProgress;
 export const selectAuthInfoError = (state: RootState) =>
   state.auth.authInfoError;
+
+// Login selectors
+export const selectLoginInProgress = (state: RootState) =>
+  state.auth.loginInProgress;
+export const selectLoginError = (state: RootState) =>
+  state.auth.loginError;
+
+// Signup selectors
+export const selectSignupInProgress = (state: RootState) =>
+  state.auth.signupInProgress;
+export const selectSignupError = (state: RootState) =>
+  state.auth.signupError;
+
+// Logout selectors
+export const selectLogoutInProgress = (state: RootState) =>
+  state.auth.logoutInProgress;
+export const selectLogoutError = (state: RootState) =>
+  state.auth.logoutError;
 
 // export const authenticationInProgress = (state, nextInProgress = 'any') => {
 //   const {

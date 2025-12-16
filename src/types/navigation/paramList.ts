@@ -10,7 +10,9 @@ export type AuthStackParamList = {
 };
 
 // Main Stack
-export type AppStackParamList = {};
+export type AppStackParamList = {
+  Placeholder: undefined;
+};
 
 // bottom Stack
 export type BottomTabParamList = {};
