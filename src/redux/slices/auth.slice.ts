@@ -214,6 +214,7 @@ export const fetchAuthenticationState = createAsyncThunk<AuthInfo, void, Thunk>(
               const attributes = user.attributes as any;
               if (attributes.banned === true || attributes.deleted === true) {
                 // User is banned or deleted - they should not be authenticated
+                await sdk.logout();
                 return rejectWithValue({
                   message: 'User is banned or deleted',
                   userStatus: attributes.banned ? 'banned' : 'deleted',
@@ -228,6 +229,7 @@ export const fetchAuthenticationState = createAsyncThunk<AuthInfo, void, Thunk>(
 
             if (status >= 400 && status < 500) {
               // 4xx errors - token invalid/expired, show AuthNavigator
+              await sdk.logout();
               return rejectWithValue({
                 message: 'Token invalid or expired',
                 errorType: 'client_error',

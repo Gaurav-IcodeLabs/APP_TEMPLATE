@@ -147,12 +147,6 @@ export const fetchCurrentUser = createAsyncThunk<
       const response = await sdk.currentUser?.show(parameters);
       const entities = denormalisedResponseEntities(response);
 
-      // Handle deleted user
-      if (entities[0]?.attributes?.profile?.metadata?.isDeleted === true) {
-        await sdk.logout();
-        return undefined;
-      }
-
       if (entities.length !== 1) {
         throw new Error(
           'Expected a resource in the sdk.currentUser.show response',
