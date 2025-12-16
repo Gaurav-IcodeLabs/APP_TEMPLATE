@@ -1,9 +1,16 @@
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import {
+  createSlice,
+  createAsyncThunk,
+  createSelector,
+} from '@reduxjs/toolkit';
 import { AuthInfo } from '../../types/auth';
 import { AppDispatch, RootState } from '../store';
 import * as log from '../../util/log';
 import { ApiErrorResponse } from '../../types/api/api.types';
 import { storableError } from '../../util';
+import { Thunk } from '@appTypes/index';
+import { fetchCurrentUser } from './user.slice';
+import { hideSplash } from 'react-native-splash-view';
 
 const authenticated = (authInfo: AuthInfo) => authInfo?.isAnonymous === false;
 const loggedInAs = (authInfo: AuthInfo) => authInfo?.isLoggedInAs === true;
@@ -17,164 +24,252 @@ const initialState = {
   isLoggedInAs: false,
 
   // scopes associated with current token
-  authScopes: [],
+  authScopes: [] as string[],
 
   // auth info
   authInfoLoaded: false,
+  authInfoInProgress: false,
+  authInfoError: null as any,
+
+  // navigation state
+  shouldShowAuthNavigator: false,
+  shouldShowAppNavigator: false,
 
   // login
-  loginError: null,
+  loginError: null as any,
   loginInProgress: false,
 
   // logout
-  logoutError: null,
+  logoutError: null as any,
   logoutInProgress: false,
 
   // signup
-  signupError: null,
+  signupError: null as any,
   signupInProgress: false,
 
   // confirm (create use with idp)
-  confirmError: null,
+  confirmError: null as any,
   confirmInProgress: false,
 };
 
 // ================ Async Thunks ================ //
 
-const loadAuthInfo = createAsyncThunk<
-  Promise<AuthInfo | null>,
-  void,
-  {
-    dispatch: AppDispatch;
-    state: RootState;
-    extra: any;
-  }
->('auth/loadAuthInfo', (_, thunkAPI) => {
-  const { extra: sdk } = thunkAPI;
-  return sdk.authInfo().catch((e: ApiErrorResponse) => {
-    // Requesting auth info just reads the token from the token
-    // store (i.e. cookies), and should not fail in normal
-    // circumstances. If it fails, it's due to a programming
-    // error. In that case we mark the operation done and dispatch
-    // `null` success action that marks the user as unauthenticated.
-    log.error(e, 'auth-info-failed');
+// const loadAuthInfo = createAsyncThunk<
+//   Promise<AuthInfo | null>,
+//   void,
+//   {
+//     dispatch: AppDispatch;
+//     state: RootState;
+//     extra: any;
+//   }
+// >('auth/loadAuthInfo', (_, thunkAPI) => {
+//   const { extra: sdk } = thunkAPI;
+//   return sdk.authInfo().catch((e: ApiErrorResponse) => {
+//     // Requesting auth info just reads the token from the token
+//     // store (i.e. cookies), and should not fail in normal
+//     // circumstances. If it fails, it's due to a programming
+//     // error. In that case we mark the operation done and dispatch
+//     // `null` success action that marks the user as unauthenticated.
+//     log.error(e, 'auth-info-failed');
 
-    return null;
-  });
-});
+//     return null;
+//   });
+// });
 
-const loginWithUsernamePassword = createAsyncThunk<
-  unknown,
-  { username: string; password: string },
-  {
-    dispatch: AppDispatch;
-    state: RootState;
-    extra: any;
-  }
->(
-  'auth/loginWithUsernamePassword',
-  ({ username, password }, thunkAPI) => {
-    const { rejectWithValue, extra: sdk } = thunkAPI;
+// const loginWithUsernamePassword = createAsyncThunk<
+//   unknown,
+//   { username: string; password: string },
+//   {
+//     dispatch: AppDispatch;
+//     state: RootState;
+//     extra: any;
+//   }
+// >(
+//   'auth/loginWithUsernamePassword',
+//   ({ username, password }, thunkAPI) => {
+//     const { rejectWithValue, extra: sdk } = thunkAPI;
 
-    return sdk
-      .login({ username, password })
-      .catch((e: ApiErrorResponse) => rejectWithValue(storableError(e)));
-  },
-  {
-    condition: (_, { getState }) => {
-      const state = getState();
-      if (authenticationInProgress(state, 'loginInProgress')) {
-        return false;
+//     return sdk
+//       .login({ username, password })
+//       .catch((e: ApiErrorResponse) => rejectWithValue(storableError(e)));
+//   },
+//   {
+//     condition: (_, { getState }) => {
+//       const state = getState();
+//       if (authenticationInProgress(state, 'loginInProgress')) {
+//         return false;
+//       }
+//     },
+//   },
+// );
+
+// const logoutThunk = createAsyncThunk<
+//   unknown,
+//   void,
+//   {
+//     dispatch: AppDispatch;
+//     state: RootState;
+//     extra: any;
+//     rejectWithValue: (value: unknown) => never;
+//   }
+// >(
+//   'auth/logout',
+//   (_, thunkAPI) => {
+//     const { rejectWithValue, extra: sdk, dispatch } = thunkAPI;
+
+//     return sdk
+//       .logout()
+//       .then(() => {
+//         // dispatch(clearCurrentUser());
+//         log.clearUserId();
+//         return true;
+//       })
+//       .catch((e: ApiErrorResponse) => rejectWithValue(storableError(e)));
+//   },
+//   {
+//     condition: (_, { getState }) => {
+//       const state = getState();
+//       if (authenticationInProgress(state, 'logoutInProgress')) {
+//         return false;
+//       }
+//     },
+//   },
+// );
+
+// const signupWithEmailPassword = createAsyncThunk<
+//   unknown,
+//   { email: string; password: string },
+//   {
+//     dispatch: AppDispatch;
+//     state: RootState;
+//     extra: any;
+//     rejectWithValue: (value: unknown) => never;
+//   }
+// >(
+//   'auth/signupWithEmailPassword',
+//   (params, thunkAPI) => {
+//     const { rejectWithValue, extra: sdk, dispatch } = thunkAPI;
+
+//     return sdk.currentUser
+//       .create(params)
+//       .then(() =>
+//         dispatch(
+//           loginThunk({ username: params.email, password: params.password }),
+//         ).unwrap(),
+//       )
+//       .then(() => params)
+//       .catch(e => {
+//         log.error(e, 'signup-failed', {
+//           email: params.email,
+//           firstName: params.firstName,
+//           lastName: params.lastName,
+//         });
+//         return rejectWithValue(storableError(e));
+//       });
+//   },
+//   {
+//     condition: (_, { getState }) => {
+//       const state = getState();
+//       if (authenticationInProgress(state, 'signupInProgress')) {
+//         return false;
+//       }
+//     },
+//   },
+// );
+
+// const signupWithIdpThunk = createAsyncThunk(
+//   'auth/signupWithIdp',
+//   (params, thunkAPI) => {
+//     const { rejectWithValue, dispatch } = thunkAPI;
+//     return createUserWithIdp(params)
+//       .then(() => dispatch(fetchCurrentUser({ afterLogin: true })))
+//       .then(() => params)
+//       .catch(e => {
+//         log.error(e, 'create-user-with-idp-failed', { params });
+//         return rejectWithValue(storableError(e));
+//       });
+//   },
+//   {
+//     condition: (_, { getState }) => {
+//       const state = getState();
+//       if (authenticationInProgress(state, 'confirmInProgress')) {
+//         return false;
+//       }
+//     },
+//   },
+// );
+
+export const fetchAuthenticationState = createAsyncThunk<AuthInfo, void, Thunk>(
+  'auth/fetchAuthenticationState',
+  async (_, { dispatch, extra: sdk, rejectWithValue }) => {
+    try {
+      const info = await sdk.authInfo();
+      // console.log('info', info);
+
+      if (info && !info.isAnonymous) {
+        // Step 2: If user token exists, fetch current user from user slice
+        try {
+          const userResult = await dispatch(fetchCurrentUser({}));
+          // console.log('userResult', JSON.stringify(userResult));
+
+          if (fetchCurrentUser.fulfilled.match(userResult)) {
+            const user = userResult.payload;
+            // console.log('user?.attributes', JSON.stringify(user?.attributes));
+            // Step 3: Check if user is banned or deleted
+            if (user?.attributes) {
+              const attributes = user.attributes as any;
+              if (attributes.banned === true || attributes.deleted === true) {
+                // User is banned or deleted - they should not be authenticated
+                return rejectWithValue({
+                  message: 'User is banned or deleted',
+                  userStatus: attributes.banned ? 'banned' : 'deleted',
+                });
+              }
+            }
+          } else if (fetchCurrentUser.rejected.match(userResult)) {
+            console.log('else case');
+            // Handle user fetch errors (4xx vs 5xx)
+            const error = userResult.payload as any;
+            const status = error?.status;
+
+            if (status >= 400 && status < 500) {
+              // 4xx errors - token invalid/expired, show AuthNavigator
+              return rejectWithValue({
+                message: 'Token invalid or expired',
+                errorType: 'client_error',
+                status,
+              });
+            }
+            // 5xx errors - server issues, assume authenticated and show AppNavigator
+            // We'll handle this in the reducer
+          }
+        } catch (userError) {
+          console.log('User fetch error:', userError);
+        }
       }
-    },
+
+      return info;
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Failed to fetch auth info';
+      return rejectWithValue({ message });
+    } finally {
+      hideSplash();
+    }
   },
 );
 
-const logoutThunk = createAsyncThunk<unknown, void, {
-  dispatch: AppDispatch;
-  state: RootState;
-  extra: any;
-  rejectWithValue: (value: unknown) => never;
-}>(
-  'auth/logout',
-  (_, thunkAPI) => {
-    const { rejectWithValue, extra: sdk, dispatch } = thunkAPI;
-
-    return sdk
-      .logout()
-      .then(() => {
-        // dispatch(clearCurrentUser());
-        log.clearUserId();
-        return true;
-      })
-      .catch((e: ApiErrorResponse) => rejectWithValue(storableError(e)));
-  },
-  {
-    condition: (_, { getState }) => {
-      const state = getState();
-      if (authenticationInProgress(state, 'logoutInProgress')) {
-        return false;
-      }
-    },
-  },
-);
-
-const signupWithEmailPassword = createAsyncThunk<unknown, {email: string, password: string}, {
-  dispatch: AppDispatch;
-  state: RootState;
-  extra: any;
-  rejectWithValue: (value: unknown) => never;
-}>(
-  'auth/signupWithEmailPassword',
-  (params, thunkAPI) => {
-    const { rejectWithValue, extra: sdk, dispatch } = thunkAPI;
-
-    return sdk.currentUser
-      .create(params)
-      .then(() =>
-        dispatch(
-          loginThunk({ username: params.email, password: params.password }),
-        ).unwrap(),
-      )
-      .then(() => params)
-      .catch(e => {
-        log.error(e, 'signup-failed', {
-          email: params.email,
-          firstName: params.firstName,
-          lastName: params.lastName,
-        });
-        return rejectWithValue(storableError(e));
-      });
-  },
-  {
-    condition: (_, { getState }) => {
-      const state = getState();
-      if (authenticationInProgress(state, 'signupInProgress')) {
-        return false;
-      }
-    },
-  },
-);
-
-const signupWithIdpThunk = createAsyncThunk(
-  'auth/signupWithIdp',
-  (params, thunkAPI) => {
-    const { rejectWithValue, dispatch } = thunkAPI;
-    return createUserWithIdp(params)
-      .then(() => dispatch(fetchCurrentUser({ afterLogin: true })))
-      .then(() => params)
-      .catch(e => {
-        log.error(e, 'create-user-with-idp-failed', { params });
-        return rejectWithValue(storableError(e));
-      });
-  },
-  {
-    condition: (_, { getState }) => {
-      const state = getState();
-      if (authenticationInProgress(state, 'confirmInProgress')) {
-        return false;
-      }
-    },
+export const login = createAsyncThunk<{}, any, Thunk>(
+  'auth/loginStatus',
+  async (params, { extra: sdk, rejectWithValue }) => {
+    try {
+      const currentUser = await sdk.login(params);
+      console.log('currentUser', currentUser);
+      return currentUser;
+    } catch (error: any) {
+      console.log('error', error);
+      return rejectWithValue(storableError(error));
+    }
   },
 );
 
@@ -183,126 +278,174 @@ const signupWithIdpThunk = createAsyncThunk(
 const authSlice = createSlice({
   name: 'auth',
   initialState,
-  reducers: {},
+  reducers: {
+    resetNavigationState: state => {
+      state.shouldShowAuthNavigator = false;
+      state.shouldShowAppNavigator = false;
+    },
+  },
   extraReducers: builder => {
-    // Auth Info
-    builder.addCase(authInfoThunk.fulfilled, (state, action) => {
-      const payload = action.payload;
-      state.authInfoLoaded = true;
-      state.isAuthenticated = authenticated(payload);
-      state.isLoggedInAs = loggedInAs(payload);
-      state.authScopes = payload?.scopes || [];
-    });
-
-    // Login
+    // Auth Info Main Flow
     builder
-      .addCase(loginThunk.pending, state => {
-        state.loginInProgress = true;
-        state.loginError = null;
-        state.logoutError = null;
-        state.signupError = null;
+      .addCase(fetchAuthenticationState.pending, state => {
+        state.authInfoInProgress = true;
+        state.authInfoError = null;
+        state.shouldShowAuthNavigator = false;
+        state.shouldShowAppNavigator = false;
       })
-      .addCase(loginThunk.fulfilled, state => {
-        state.loginInProgress = false;
-        state.isAuthenticated = true;
-      })
-      .addCase(loginThunk.rejected, (state, action) => {
-        state.loginInProgress = false;
-        state.loginError = action.payload;
-      });
+      .addCase(fetchAuthenticationState.fulfilled, (state, action) => {
+        const payload = action.payload;
+        state.authInfoInProgress = false;
+        state.authInfoLoaded = true;
+        state.authInfoError = null;
 
-    // Logout
-    builder
-      .addCase(logoutThunk.pending, state => {
-        state.logoutInProgress = true;
-        state.loginError = null;
-        state.logoutError = null;
+        // Determine authentication and navigation
+        const isAuth = authenticated(payload);
+        state.isAuthenticated = isAuth;
+        state.isLoggedInAs = loggedInAs(payload);
+        state.authScopes = payload?.scopes || [];
+
+        // Set navigation state
+        if (isAuth) {
+          state.shouldShowAppNavigator = true;
+        } else {
+          state.shouldShowAuthNavigator = true;
+        }
       })
-      .addCase(logoutThunk.fulfilled, state => {
-        state.logoutInProgress = false;
+      .addCase(fetchAuthenticationState.rejected, (state, action) => {
+        state.authInfoInProgress = false;
+        state.authInfoError = action.payload;
         state.isAuthenticated = false;
-        state.isLoggedInAs = false;
-        state.authScopes = [];
-      })
-      .addCase(logoutThunk.rejected, (state, action) => {
-        state.logoutInProgress = false;
-        state.logoutError = action.payload;
-      });
 
-    // Signup
-    builder
-      .addCase(signupThunk.pending, state => {
-        state.signupInProgress = true;
-        state.loginError = null;
-        state.signupError = null;
-      })
-      .addCase(signupThunk.fulfilled, state => {
-        state.signupInProgress = false;
-      })
-      .addCase(signupThunk.rejected, (state, action) => {
-        state.signupInProgress = false;
-        state.signupError = action.payload;
+        // Always show AuthNavigator on rejection (banned/deleted/invalid token)
+        state.shouldShowAuthNavigator = true;
       });
-
-    // Signup with IDP (Confirm)
-    builder
-      .addCase(signupWithIdpThunk.pending, state => {
-        state.confirmInProgress = true;
-        state.loginError = null;
-        state.confirmError = null;
-      })
-      .addCase(signupWithIdpThunk.fulfilled, state => {
-        state.confirmInProgress = false;
-        state.isAuthenticated = true;
-      })
-      .addCase(signupWithIdpThunk.rejected, (state, action) => {
-        state.confirmInProgress = false;
-        state.confirmError = action.payload;
-      });
+    // // Login
+    // builder
+    //   .addCase(loginThunk.pending, state => {
+    //     state.loginInProgress = true;
+    //     state.loginError = null;
+    //     state.logoutError = null;
+    //     state.signupError = null;
+    //   })
+    //   .addCase(loginThunk.fulfilled, state => {
+    //     state.loginInProgress = false;
+    //     state.isAuthenticated = true;
+    //   })
+    //   .addCase(loginThunk.rejected, (state, action) => {
+    //     state.loginInProgress = false;
+    //     state.loginError = action.payload;
+    //   });
+    // // Logout
+    // builder
+    //   .addCase(logoutThunk.pending, state => {
+    //     state.logoutInProgress = true;
+    //     state.loginError = null;
+    //     state.logoutError = null;
+    //   })
+    //   .addCase(logoutThunk.fulfilled, state => {
+    //     state.logoutInProgress = false;
+    //     state.isAuthenticated = false;
+    //     state.isLoggedInAs = false;
+    //     state.authScopes = [];
+    //   })
+    //   .addCase(logoutThunk.rejected, (state, action) => {
+    //     state.logoutInProgress = false;
+    //     state.logoutError = action.payload;
+    //   });
+    // // Signup
+    // builder
+    //   .addCase(signupThunk.pending, state => {
+    //     state.signupInProgress = true;
+    //     state.loginError = null;
+    //     state.signupError = null;
+    //   })
+    //   .addCase(signupThunk.fulfilled, state => {
+    //     state.signupInProgress = false;
+    //   })
+    //   .addCase(signupThunk.rejected, (state, action) => {
+    //     state.signupInProgress = false;
+    //     state.signupError = action.payload;
+    //   });
+    // // Signup with IDP (Confirm)
+    // builder
+    //   .addCase(signupWithIdpThunk.pending, state => {
+    //     state.confirmInProgress = true;
+    //     state.loginError = null;
+    //     state.confirmError = null;
+    //   })
+    //   .addCase(signupWithIdpThunk.fulfilled, state => {
+    //     state.confirmInProgress = false;
+    //     state.isAuthenticated = true;
+    //   })
+    //   .addCase(signupWithIdpThunk.rejected, (state, action) => {
+    //     state.confirmInProgress = false;
+    //     state.confirmError = action.payload;
+    //   });
   },
 });
 
-export { logoutThunk };
+export const { resetNavigationState } = authSlice.actions;
 export default authSlice.reducer;
 
 // ================ Selectors ================ //
 
-export const authenticationInProgress = (state, nextInProgress = 'any') => {
-  const {
-    loginInProgress,
-    logoutInProgress,
-    signupInProgress,
-    confirmInProgress,
-  } = state.auth;
-  const anyInProgress =
-    loginInProgress ||
-    logoutInProgress ||
-    signupInProgress ||
-    confirmInProgress;
-  return nextInProgress === 'loginInProgress'
-    ? loginInProgress || logoutInProgress || confirmInProgress
-    : anyInProgress;
-};
+const authState = (state: RootState) => state.auth;
+
+export const isAuthenticatedSelector = createSelector(
+  [authState],
+  state => state.isAuthenticated,
+);
+
+export const selectAuthState = (state: RootState) => state.auth;
+export const selectIsAuthenticated = (state: RootState) =>
+  state.auth.isAuthenticated;
+export const selectShouldShowAuthNavigator = (state: RootState) =>
+  state.auth.shouldShowAuthNavigator;
+export const selectShouldShowAppNavigator = (state: RootState) =>
+  state.auth.shouldShowAppNavigator;
+
+export const selectAuthInfoInProgress = (state: RootState) =>
+  state.auth.authInfoInProgress;
+export const selectAuthInfoError = (state: RootState) =>
+  state.auth.authInfoError;
+
+// export const authenticationInProgress = (state, nextInProgress = 'any') => {
+//   const {
+//     loginInProgress,
+//     logoutInProgress,
+//     signupInProgress,
+//     confirmInProgress,
+//   } = state.auth;
+//   const anyInProgress =
+//     loginInProgress ||
+//     logoutInProgress ||
+//     signupInProgress ||
+//     confirmInProgress;
+//   return nextInProgress === 'loginInProgress'
+//     ? loginInProgress || logoutInProgress || confirmInProgress
+//     : anyInProgress;
+// };
 
 // ================ Thunk Wrappers ================ //
 // These maintain the same API as the original thunks
 
-export const login = (username, password) => dispatch => {
-  return dispatch(loginThunk({ username, password })).unwrap();
-};
+// export const login = (username, password) => dispatch => {
+//   return dispatch(loginThunk({ username, password })).unwrap();
+// };
 
-export const logout = () => dispatch => {
-  return dispatch(logoutThunk()).unwrap();
-};
+// export const logout = () => dispatch => {
+//   return dispatch(logoutThunk()).unwrap();
+// };
 
-export const signup = params => dispatch => {
-  return dispatch(signupThunk(params)).unwrap();
-};
+// export const signup = params => dispatch => {
+//   return dispatch(signupThunk(params)).unwrap();
+// };
 
-export const signupWithIdp = params => dispatch => {
-  return dispatch(signupWithIdpThunk(params)).unwrap();
-};
+// export const signupWithIdp = params => dispatch => {
+//   return dispatch(signupWithIdpThunk(params)).unwrap();
+// };
 
-export const authInfo = () => dispatch => {
-  return dispatch(authInfoThunk()).unwrap();
-};
+// export const authInfo = () => dispatch => {
+//   return dispatch(authInfoThunk()).unwrap();
+// };
