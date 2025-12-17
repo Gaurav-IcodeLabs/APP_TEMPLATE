@@ -4,11 +4,12 @@ import {
   createSelector,
   createSlice,
 } from '@reduxjs/toolkit';
+import * as log from '../../util/log';
 import { hideSplash } from 'react-native-splash-view';
 import { AuthInfo } from '../../types/auth';
 import { storableError } from '../../util';
 import { RootState } from '../store';
-import { fetchCurrentUser } from './user.slice';
+import { clearCurrentUser, fetchCurrentUser } from './user.slice';
 
 const authenticated = (authInfo: AuthInfo) => authInfo?.isAnonymous === false;
 const loggedInAs = (authInfo: AuthInfo) => authInfo?.isLoggedInAs === true;
@@ -255,15 +256,46 @@ export const fetchAuthenticationState = createAsyncThunk<AuthInfo, void, Thunk>(
   },
 );
 
-export const login = createAsyncThunk<{}, any, Thunk>(
+export const login = createAsyncThunk<
+  {
+    status: number;
+    data: {
+      access_token: string;
+      scope: string;
+      token_type: string;
+      expires_in: number;
+      refresh_token: string;
+    };
+  },
+  {
+    username: string;
+    password: string;
+  },
+  Thunk
+>(
   'auth/loginStatus',
-  async (params, { extra: sdk, rejectWithValue }) => {
+  async (params, { extra: sdk, rejectWithValue, dispatch }) => {
     try {
-      const currentUser = await sdk.login(params);
-      console.log('currentUser', currentUser);
-      return currentUser;
+      const res = await sdk.login(params);
+      dispatch(fetchCurrentUser({}));
+      return res;
     } catch (error: any) {
       console.log('error', error);
+      return rejectWithValue(storableError(error));
+    }
+  },
+);
+
+export const logout = createAsyncThunk<boolean, void, Thunk>(
+  'auth/logout',
+  async (_, { extra: sdk, rejectWithValue, dispatch }) => {
+    try {
+      await sdk.logout();
+      dispatch(clearCurrentUser());
+      log.clearUserId();
+      return true;
+    } catch (error: any) {
+      // console.log('error', error);
       return rejectWithValue(storableError(error));
     }
   },
@@ -301,22 +333,41 @@ const authSlice = createSlice({
         state.authInfoError = action.payload;
         state.isAuthenticated = false;
       });
+
+    // Logout
+    builder
+      .addCase(logout.pending, state => {
+        state.logoutInProgress = true;
+        state.loginError = null;
+        state.logoutError = null;
+      })
+      .addCase(logout.fulfilled, state => {
+        state.logoutInProgress = false;
+        state.isAuthenticated = false;
+        state.isLoggedInAs = false;
+        state.authScopes = [];
+      })
+      .addCase(logout.rejected, (state, action) => {
+        state.logoutInProgress = false;
+        state.logoutError = action.payload;
+      });
+
     // // Login
-    // builder
-    //   .addCase(loginThunk.pending, state => {
-    //     state.loginInProgress = true;
-    //     state.loginError = null;
-    //     state.logoutError = null;
-    //     state.signupError = null;
-    //   })
-    //   .addCase(loginThunk.fulfilled, state => {
-    //     state.loginInProgress = false;
-    //     state.isAuthenticated = true;
-    //   })
-    //   .addCase(loginThunk.rejected, (state, action) => {
-    //     state.loginInProgress = false;
-    //     state.loginError = action.payload;
-    //   });
+    builder
+      .addCase(login.pending, state => {
+        state.loginInProgress = true;
+        state.loginError = null;
+        state.logoutError = null;
+        state.signupError = null;
+      })
+      .addCase(login.fulfilled, state => {
+        state.loginInProgress = false;
+        state.isAuthenticated = true;
+      })
+      .addCase(login.rejected, (state, action) => {
+        state.loginInProgress = false;
+        state.loginError = action.payload;
+      });
     // // Logout
     // builder
     //   .addCase(logoutThunk.pending, state => {

@@ -9,8 +9,8 @@ export const Login: React.FC = () => {
   const loginUser = async () => {
     await dispatch(
       login({
-        username: 't@yopmail.com',
-        password: '11111111',
+        username: 'b@yopmail.com',
+        password: '12345678',
       }),
     );
   };

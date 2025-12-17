@@ -10,7 +10,7 @@ const AuthNavigator = () => {
   return (
     <Navigator screenOptions={navigationConfig}>
       <Screen name={SCREENS.LOGIN} component={Login} />
-      {/* <Screen name={SCREENS.SIGNUP} component={Signup} /> */}
+      <Screen name={SCREENS.SIGNUP} component={Signup} />
     </Navigator>
   );
 };

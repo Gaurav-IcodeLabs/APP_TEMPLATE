@@ -31,30 +31,47 @@ export interface BannedUserAttributes {
 export interface User {
   id: UUID;
   type: 'user';
-  attributes: UserAttributes | AuthorAttributes | DeletedUserAttributes | BannedUserAttributes;
+  attributes:
+    | UserAttributes
+    | AuthorAttributes
+    | DeletedUserAttributes
+    | BannedUserAttributes;
   profileImage?: Image;
 }
 
+export type CurrentUserPermissions = {
+  read: 'permission/allow' | 'permission/deny';
+  initiateTransactions: 'permission/allow' | 'permission/deny';
+  postListings: 'permission/allow' | 'permission/deny';
+};
+
+export type CurrentUserState = 'active' | 'pending-approval' | 'inactive';
+
 export interface CurrentUserAttributes {
   banned: boolean;
+  deleted: boolean;
   email: string;
-  emailVerified: boolean;
-  profile: {
-    firstName: string;
-    lastName: string;
-    displayName: string;
-    abbreviatedName: string;
-    bio?: string;
+  emailVerified?: boolean;
+  profile?: {
+    firstName?: string;
+    lastName?: string;
+    displayName?: string;
+    abbreviatedName?: string;
+    bio?: string | null;
+    privateData?: Record<string, any>;
+    protectedData?: Record<string, any>;
+    publicData?: Record<string, any>;
+    metadata?: Record<string, any>;
   };
   stripeConnected?: boolean;
-}
 
-export interface CurrentUserBannedAttributes {
-  banned: boolean;
-}
-
-export interface CurrentUserDeletedAttributes {
-  deleted: boolean;
+  permissions?: CurrentUserPermissions;
+  stripePayoutsEnabled?: boolean;
+  createdAt?: string;
+  state?: CurrentUserState;
+  stripeChargesEnabled?: boolean;
+  identityProviders?: { idpId: string; userId: string }[];
+  pendingEmail?: string | null;
 }
 
 // Denormalised currentUser object
@@ -64,12 +81,4 @@ export type CurrentUser = {
   attributes: CurrentUserAttributes;
   profileImage?: Image;
   stripeAccount?: any; // TODO: Define StripeAccount type
-} | {
-  id: UUID;
-  type: 'currentUser';
-  attributes: CurrentUserBannedAttributes;
-} | {
-  id: UUID;
-  type: 'currentUser';
-  attributes: CurrentUserDeletedAttributes;
 };

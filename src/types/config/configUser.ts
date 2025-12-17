@@ -31,10 +31,12 @@ export interface DefaultUserFields {
 
 export interface DisplayNameSettings {
   displayInSignUp: boolean;
+  required?: boolean;
 }
 
 export interface PhoneNumberSettings {
   displayInSignUp: boolean;
+  required?: boolean;
 }
 
 // Individual user type configuration: customer / provider

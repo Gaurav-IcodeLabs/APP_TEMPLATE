@@ -5,4 +5,6 @@ export const SCREENS = {
   SIGNUP: 'Signup',
   FORGET_PASSWORD: 'ForgetPassword',
   RESET_PASSWORD: 'ResetPassword',
+
+  HOME: 'Home',
 } as const;

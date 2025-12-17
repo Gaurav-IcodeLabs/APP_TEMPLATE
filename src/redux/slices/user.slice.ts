@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import { CurrentUser, StorableError, Thunk } from '@appTypes/index';
 import { RootState } from '@redux/store';
@@ -39,25 +40,29 @@ const currentUserParameters = {
 };
 
 const mergeCurrentUser = (
-  oldCurrentUser: CurrentUser,
-  newCurrentUser: CurrentUser,
-) => {
+  oldCurrentUser: CurrentUser | null,
+  newCurrentUser: CurrentUser | null,
+): CurrentUser | null => {
   const {
     id: oId,
     type: oType,
     attributes: oAttr,
     ...oldRelationships
   } = oldCurrentUser || {};
-  const { id, type, attributes, ...relationships } = newCurrentUser || {};
+
+  if(newCurrentUser === null) {
+    return null;
+  }
+  if(oldCurrentUser === null) {
+    return newCurrentUser;
+  }
+
+  const { id, type, attributes, ...relationships } = newCurrentUser;
 
   // Passing null will remove currentUser entity.
   // Only relationships are merged.
   // TODO figure out if sparse fields handling needs a better handling.
-  return newCurrentUser === null
-    ? null
-    : oldCurrentUser === null
-    ? newCurrentUser
-    : { id, type, attributes, ...oldRelationships, ...relationships };
+  return { id, type, attributes, ...oldRelationships, ...relationships };
 };
 
 const initialState: UserState = {
@@ -76,8 +81,15 @@ const userSlice = createSlice({
   name: 'user',
   initialState,
   reducers: {
-    clearCurrentUser: () => {
-      return initialState;
+    clearCurrentUser: state => {
+      state.currentUser = null;
+      state.currentUserShowError = null;
+      // state.currentUserHasListings = false;
+      // state.currentUserHasListingsError = null;
+      // state.currentUserSaleNotificationCount = 0;
+      // state.currentUserOrderNotificationCount = 0;
+
+      // state.currentUserNotificationCountError = null;
     },
     setCurrentUser: (state, { payload }) => {
       state.currentUser = mergeCurrentUser(
@@ -161,7 +173,7 @@ export const fetchCurrentUser = createAsyncThunk<
 
       return currentUser;
     } catch (error: any) {
-      console.log('err', JSON.stringify(error));
+      console.log('err', error);
       return rejectWithValue({
         message: error?.message || 'Failed to fetch current user',
       });
@@ -263,8 +275,8 @@ export const currentUserStripeAccountSelector = (state: RootState) =>
   state.user?.currentUser?.stripeAccount;
 export const currentUserProfileImageSelector = (state: RootState) =>
   state.user?.currentUser?.profileImage;
-export const stripeCustomerSelector = (state: RootState) =>
-  state.user.currentUser?.stripeCustomer;
+// export const stripeCustomerSelector = (state: RootState) =>
+//   state.user.currentUser?.stripeCustomer;
 export const stripeAccountIdSelector = (state: RootState) =>
   state.user?.currentUser?.stripeAccount?.attributes?.stripeAccountId;
 export const currentUserIdSelector = (state: RootState) =>

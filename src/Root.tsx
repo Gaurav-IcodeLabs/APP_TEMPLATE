@@ -5,6 +5,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import {
   fetchAuthenticationState,
   isAuthenticatedSelector,
+  logout,
   selectIsAuthenticated,
 } from '@redux/slices/auth.slice';
 import {
@@ -25,6 +26,7 @@ const Root = () => {
   // }
 
   useEffect(() => {
+    // dispatch(logout());
     dispatch(fetchAppAssets());
     // Start the authentication flow
     dispatch(fetchAuthenticationState());
