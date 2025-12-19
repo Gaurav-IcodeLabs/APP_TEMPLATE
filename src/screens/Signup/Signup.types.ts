@@ -6,5 +6,5 @@ export type SignupFormValues = {
   lastName: string;
   displayName: string | undefined;
   phoneNumber: string | undefined;
-  // terms: string[];
+  terms: string[];
 } & Record<string, any>; // Dynamic user fields

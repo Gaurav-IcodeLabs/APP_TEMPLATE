@@ -17,36 +17,6 @@ export const SignupPhoneNumberInputField: React.FC<Props> = ({ control }) => {
       labelKey="phoneNumber"
       placeholder="Enter your phoneNumber"
     />
-    // <Controller
-    //   control={control}
-    //   name="phoneNumber"
-    //   rules={
-    //     isRequired
-    //       ? {
-    //           required: 'Phone number is required',
-    //           validate: {
-    //             nonEmpty: value =>
-    //               isNonEmptyString(value) || 'Phone number is required',
-    //           },
-    //         }
-    //       : undefined
-    //   }
-    //   render={({ field: { onChange, onBlur, value } }) => (
-    //     <>
-    //       <TextInput
-    //         style={styles.input}
-    //         placeholder="Phone number"
-    //         keyboardType="phone-pad"
-    //         onBlur={onBlur}
-    //         onChangeText={onChange}
-    //         value={value}
-    //       />
-    //       {errors.phoneNumber && (
-    //         <Text style={styles.errorText}>{errors.phoneNumber.message}</Text>
-    //       )}
-    //     </>
-    //   )}
-    // />
   );
 };
 

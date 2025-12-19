@@ -17,3 +17,6 @@ export * from './reviewTypes';
 // Schema types
 export * from './schemaTypes';
 export * from './screens';
+
+// typography
+export * from './typography';

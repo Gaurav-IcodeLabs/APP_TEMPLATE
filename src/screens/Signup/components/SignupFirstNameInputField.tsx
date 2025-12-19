@@ -17,34 +17,6 @@ export const SignupFirstNameInputField: React.FC<Props> = ({ control }) => {
       labelKey="firstName"
       placeholder="Enter your firstName"
     />
-    // <Controller
-    //   control={control}
-    //   name="firstName"
-    //   rules={{
-    //     required: 'First name is required',
-    //     validate: {
-    //       nonEmpty: value => {
-    //         return isNonEmptyString(value) || 'First name is required';
-    //       },
-    //     },
-    //   }}
-    //   render={({ field: { onChange, onBlur, value } }) => (
-    //     <>
-    //       <TextInput
-    //         style={styles.input}
-    //         placeholder="First name"
-    //         autoComplete="given-name"
-    //         autoCapitalize="words"
-    //         onBlur={onBlur}
-    //         onChangeText={onChange}
-    //         value={value}
-    //       />
-    //       {errors.firstName && (
-    //         <Text style={styles.errorText}>{errors.firstName.message}</Text>
-    //       )}
-    //     </>
-    //   )}
-    // />
   );
 };
 

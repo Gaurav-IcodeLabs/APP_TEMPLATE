@@ -27,7 +27,6 @@ const CustomUserFields = ({
     selectedUserType,
   );
 
-  // console.log('userFieldProps', JSON.stringify(userFieldProps));
   const showCustomUserFields =
     showDefaultUserFields && userFieldProps?.length > 0;
 

@@ -21,7 +21,7 @@ const persistConfig = {
   key: 'root',
   storage: AsyncStorage,
   version: 0,
-  whitelist: [], // Add slices you want to persist
+  whitelist: ['hostedAssets', 'user'], // Add slices you want to persist
 };
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);

@@ -17,40 +17,6 @@ export const SignupDisplayNameInputField: React.FC<Props> = ({ control }) => {
       labelKey="displayName"
       placeholder="Enter your displayName"
     />
-    // <Controller
-    //   control={control}
-    //   name="displayName"
-    //   rules={
-    //     isRequired
-    //       ? {
-    //           required: 'Display name is required',
-    //           validate: {
-    //             nonEmpty: value => {
-    //               return isNonEmptyString(value) || 'Display name is required';
-    //             },
-    //           },
-    //         }
-    //       : undefined
-    //   }
-    //   render={({
-    //     field: { onChange, onBlur, value },
-    //     fieldState: { error },
-    //   }) => (
-    //     <>
-    //       <TextInput
-    //         style={styles.input}
-    //         placeholder="Display name"
-    //         autoCapitalize="words"
-    //         onBlur={onBlur}
-    //         onChangeText={onChange}
-    //         value={value}
-    //       />
-    //       {errors.displayName && (
-    //         <Text style={styles.errorText}>{errors.displayName.message}</Text>
-    //       )}
-    //     </>
-    //   )}
-    // />
   );
 };
 

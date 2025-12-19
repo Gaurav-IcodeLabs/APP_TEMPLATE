@@ -18,7 +18,6 @@ export const getSignUpSchema = (
   userFields: UserFieldConfigItem[],
   t: TFunction,
 ) => {
-  console.log('signup schema');
   const userType = selectedUserType;
   const userTypeConfig = userTypes.find(config => config.userType === userType);
 
@@ -122,7 +121,7 @@ export const getSignUpSchema = (
         showPhoneNumber && phoneNumberRequired
           ? z.string().min(8, t('SignupForm.phoneNumberRequired'))
           : z.string().optional(),
-      // terms: z.array(z.string()).length(1),
+      terms: z.array(z.string()).length(1),
       ...conditionalFields,
     })
     .refine(

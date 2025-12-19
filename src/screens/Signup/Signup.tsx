@@ -1,10 +1,5 @@
 /* eslint-disable react-native/no-inline-styles */
-import { useConfiguration } from '@context/configurationContext';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { RouteProp, useRoute } from '@react-navigation/native';
 import React, { useMemo, useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { useTranslation } from 'react-i18next';
 import {
   ScrollView,
   StyleSheet,
@@ -12,6 +7,16 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { useConfiguration } from '@context/configurationContext';
+import { zodResolver } from '@hookform/resolvers/zod';
+import {
+  NavigationProp,
+  RouteProp,
+  useNavigation,
+  useRoute,
+} from '@react-navigation/native';
+import { useForm } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 import type { UserTypeConfigItem } from '../../types/config/configUser';
 import { AuthStackParamList } from '../../types/navigation/paramList';
 import CustomUserFields from './components/CustomUserFields';
@@ -27,8 +32,13 @@ import { SignupFormValues } from './Signup.types';
 import { getNonUserFieldParams, pickUserFieldsData } from '@util/userHelpers';
 import { useAppDispatch } from '@redux/store';
 import { signupWithEmailPassword } from '@redux/slices/auth.slice';
+import { TermsAndPolicy } from './components/TermsAndPolicy';
+import { Button, CommonText } from '@components/index';
+import { colors } from '@constants/colors';
+import { SCREENS } from '@constants/screens';
 
 type SignupRouteProp = RouteProp<AuthStackParamList, 'Signup'>;
+type SignupNavigationProp = NavigationProp<AuthStackParamList, 'Signup'>;
 
 export const Signup: React.FC = () => {
   const route = useRoute<SignupRouteProp>();
@@ -36,6 +46,7 @@ export const Signup: React.FC = () => {
 
   const dispatch = useAppDispatch();
 
+  const navigation = useNavigation<SignupNavigationProp>();
   const config = useConfiguration();
   const { t } = useTranslation();
   const userTypes = useMemo(() => config?.user.userTypes || [], [config]);
@@ -56,7 +67,7 @@ export const Signup: React.FC = () => {
       lastName: '',
       displayName: '',
       phoneNumber: '',
-      // terms: [],
+      terms: [],
     },
     resolver: zodResolver(
       getSignUpSchema(userTypes, selectedUserType, userFields, t),
@@ -131,6 +142,8 @@ export const Signup: React.FC = () => {
     dispatch(signupWithEmailPassword(params));
   };
 
+  const handleLoginPress = () => navigation.navigate(SCREENS.LOGIN);
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Sign up</Text>
@@ -171,14 +184,25 @@ export const Signup: React.FC = () => {
         ) : null}
 
         {showDefaultUserFields && (
-          <TouchableOpacity
-            style={[styles.button]}
-            onPress={handleSubmit(onSubmit)}
-            activeOpacity={0.8}
-            // don't use disabled prop = isValid because it will prevent the error to be displayed on cross field validation
-          >
-            <Text style={styles.buttonText}>Create account</Text>
-          </TouchableOpacity>
+          <>
+            <TermsAndPolicy control={control} />
+            <Button
+              title="Create Account"
+              onPress={handleSubmit(onSubmit)}
+              style={{ marginBottom: 20 }}
+              //   // don't use disabled prop = isValid because it will prevent the error to be displayed on cross field validation
+            />
+            <View style={styles.loginContainer}>
+              <CommonText style={styles.loginText}>
+                {t('Authentication.haveAnAccount')}{' '}
+              </CommonText>
+              <TouchableOpacity onPress={handleLoginPress}>
+                <CommonText style={styles.loginLink}>
+                  {t('Authentication.login')}
+                </CommonText>
+              </TouchableOpacity>
+            </View>
+          </>
         )}
       </ScrollView>
     </View>
@@ -198,19 +222,20 @@ const styles = StyleSheet.create({
     marginBottom: 24,
     textAlign: 'center',
   },
-  button: {
-    backgroundColor: '#007AFF',
-    paddingVertical: 14,
-    borderRadius: 8,
+  loginContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 12,
   },
-  buttonText: {
-    color: '#fff',
-    fontWeight: '600',
-    fontSize: 16,
+  loginText: {
+    color: colors.grey,
+    fontSize: 14,
+    // ...primaryFont('400'),
   },
-  disabled: {
-    opacity: 0.5,
+  loginLink: {
+    color: colors.marketplaceColor,
+    fontSize: 14,
+    textDecorationLine: 'underline',
+    // ...primaryFont('600'),
   },
 });
