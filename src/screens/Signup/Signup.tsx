@@ -26,6 +26,7 @@ import { SignupFormValues } from './Signup.types';
 import { getNonUserFieldParams, pickUserFieldsData } from '@util/userHelpers';
 import { useAppDispatch, useTypedSelector } from '@redux/store';
 import {
+  loginInProgress,
   signupInProgress,
   signupWithEmailPassword,
 } from '@redux/slices/auth.slice';
@@ -44,6 +45,7 @@ export const Signup: React.FC = () => {
 
   const navigation = useNavigation<SignupNavigationProp>();
   const signupInProcess = useTypedSelector(signupInProgress);
+  const loginInProcess = useTypedSelector(loginInProgress);
   const config = useConfiguration();
   const { t } = useTranslation();
   const userTypes = useMemo(() => config?.user.userTypes || [], [config]);
@@ -184,8 +186,8 @@ export const Signup: React.FC = () => {
               title="Create Account"
               onPress={handleSubmit(onSubmit)}
               style={{ marginBottom: 20 }}
-              loader={signupInProcess}
-              disabled={signupInProcess}
+              loader={signupInProcess || loginInProcess}
+              disabled={signupInProcess || loginInProcess}
               //   // don't use disabled prop = isValid because it will prevent the error to be displayed on cross field validation
             />
             <View style={styles.loginContainer}>
