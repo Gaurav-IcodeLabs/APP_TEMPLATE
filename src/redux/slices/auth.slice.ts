@@ -38,8 +38,8 @@ const initialState = {
   logoutInProgress: false,
 
   // signup
-  signupError: null as any,
-  signupInProgress: false,
+  createUserError: null as any,
+  createUserInProgress: false,
 
   // confirm (create use with idp)
   confirmError: null as any,
@@ -405,7 +405,6 @@ const authSlice = createSlice({
         state.loginInProgress = true;
         state.loginError = null;
         state.logoutError = null;
-        state.signupError = null;
       })
       .addCase(login.fulfilled, state => {
         state.loginInProgress = false;
@@ -418,17 +417,16 @@ const authSlice = createSlice({
     // // Signup
     builder
       .addCase(signupWithEmailPassword.pending, state => {
-        state.signupInProgress = true;
-        state.loginError = null;
-        state.signupError = null;
+        state.createUserInProgress = true;
+        state.createUserError = null;
       })
       .addCase(signupWithEmailPassword.fulfilled, state => {
-        state.signupInProgress = false;
-        state.isAuthenticated = true;
+        state.createUserInProgress = false;
+        // state.isAuthenticated = true; // commented because we still need to login the user after creating the user
       })
       .addCase(signupWithEmailPassword.rejected, (state, action) => {
-        state.signupInProgress = false;
-        state.signupError = action.payload;
+        state.createUserInProgress = false;
+        state.createUserError = action.payload;
       });
     // // Signup with IDP (Confirm)
     // builder
@@ -469,7 +467,7 @@ export const selectAuthInfoInProgress = (state: RootState) =>
 export const selectAuthInfoError = (state: RootState) =>
   state.auth.authInfoError;
 export const signupInProgress = (state: RootState) =>
-  state.auth.signupInProgress;
+  state.auth.createUserInProgress || state.auth.loginInProgress;
 export const loginInProgress = (state: RootState) => state.auth.loginInProgress;
 export const loginOutInProgress = (state: RootState) =>
   state.auth.logoutInProgress;

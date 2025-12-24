@@ -1,6 +1,7 @@
 /* eslint-disable react-native/no-inline-styles */
-import React, { useMemo, useState } from 'react';
-import { ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Button, CommonText } from '@components/index';
+import { colors } from '@constants/colors';
+import { SCREENS } from '@constants/screens';
 import { useConfiguration } from '@context/configurationContext';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
@@ -9,8 +10,16 @@ import {
   useNavigation,
   useRoute,
 } from '@react-navigation/native';
+import {
+  signupInProgress,
+  signupWithEmailPassword,
+} from '@redux/slices/auth.slice';
+import { useAppDispatch, useTypedSelector } from '@redux/store';
+import { getNonUserFieldParams, pickUserFieldsData } from '@util/userHelpers';
+import { useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
+import { ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import type { UserTypeConfigItem } from '../../types/config/configUser';
 import { AuthStackParamList } from '../../types/navigation/paramList';
 import CustomUserFields from './components/CustomUserFields';
@@ -20,20 +29,10 @@ import { SignupFirstNameInputField } from './components/SignupFirstNameInputFiel
 import { SignupLastNameInputField } from './components/SignupLastNameInputField';
 import { SignupPasswordInputField } from './components/SignupPasswordInputField';
 import { SignupPhoneNumberInputField } from './components/SignupPhoneNumberInputField';
+import { TermsAndPolicy } from './components/TermsAndPolicy';
 import { UserTypeField } from './components/UserTypeField';
 import { getSignUpSchema, getSoleUserTypeMaybe } from './helper';
 import { SignupFormValues } from './Signup.types';
-import { getNonUserFieldParams, pickUserFieldsData } from '@util/userHelpers';
-import { useAppDispatch, useTypedSelector } from '@redux/store';
-import {
-  loginInProgress,
-  signupInProgress,
-  signupWithEmailPassword,
-} from '@redux/slices/auth.slice';
-import { TermsAndPolicy } from './components/TermsAndPolicy';
-import { Button, CommonText } from '@components/index';
-import { colors } from '@constants/colors';
-import { SCREENS } from '@constants/screens';
 
 type SignupRouteProp = RouteProp<AuthStackParamList, 'Signup'>;
 type SignupNavigationProp = NavigationProp<AuthStackParamList, 'Signup'>;
@@ -45,7 +44,6 @@ export const Signup: React.FC = () => {
 
   const navigation = useNavigation<SignupNavigationProp>();
   const signupInProcess = useTypedSelector(signupInProgress);
-  const loginInProcess = useTypedSelector(loginInProgress);
   const config = useConfiguration();
   const { t } = useTranslation();
   const userTypes = useMemo(() => config?.user.userTypes || [], [config]);
@@ -186,8 +184,8 @@ export const Signup: React.FC = () => {
               title="Create Account"
               onPress={handleSubmit(onSubmit)}
               style={{ marginBottom: 20 }}
-              loader={signupInProcess || loginInProcess}
-              disabled={signupInProcess || loginInProcess}
+              loader={signupInProcess}
+              disabled={signupInProcess}
               //   // don't use disabled prop = isValid because it will prevent the error to be displayed on cross field validation
             />
             <View style={styles.loginContainer}>
