@@ -1,114 +1,52 @@
-// -----------------------------------------------------------------------------
-// LISTING TYPES
-// -----------------------------------------------------------------------------
+// Types for listing configuration
 
-export interface TransactionType {
-  process: string;
-  alias: string;
-  unitType: string;
-}
-
-export interface DefaultListingFields {
-  description: boolean;
-  availability: boolean;
-  payoutDetails: boolean;
-  images: boolean;
-  pickup: boolean;
-  title: boolean;
-  shipping: boolean;
-  location: boolean;
-  price: boolean;
-  stock: boolean;
-}
-
-export interface PriceVariations {
-  enabled: boolean;
-}
-
-export interface ListingType {
-  id: string;
+export interface ListingTypeConfigItem {
+  listingType: string;
   label: string;
-  transactionProcess: {
-    name: string;
+  transactionType: {
+    process: string;
     alias: string;
+    unitType: string;
   };
-  unitType?: string;
-
-  defaultListingFields: DefaultListingFields;
-
-  availabilityType?: string;
-  stockType?: string;
-  priceVariations?: PriceVariations;
+  stockType: 'infiniteStock' | 'finiteStock';
+  defaultListingFields: {
+    title?: boolean;
+    description?: boolean;
+    price?: boolean;
+    location?: boolean;
+    images?: boolean;
+    availability?: boolean;
+    stock?: boolean;
+  };
 }
 
-export type ListingTypes = ListingType[];
-
-// -----------------------------------------------------------------------------
-// LISTING FIELDS
-// -----------------------------------------------------------------------------
-
-export type SchemaType = 'enum' | 'multi-enum' | 'text' | 'long';
-
-export interface EnumOption {
-  label: string;
-  option: string;
-}
-
-export interface FilterConfig {
-  indexForSearch?: boolean;
-  label?: string;
-  filterType?: string; // e.g. SelectMultipleFilter
-  searchMode?: string; // e.g. has_all
-  group?: string; // "primary"
-}
-
-export interface ShowConfig {
-  label: string;
-  isDetail: boolean;
-  unselectedOptions: boolean;
-}
-
-export interface SaveConfig {
-  label: string;
-  isRequired: boolean;
-}
-
-export interface CategoryConfig {
-  limitToCategoryIds: boolean;
-  categoryIds?: string[];
-}
-
-export interface ListingTypeConfig {
-  limitToListingTypeIds: boolean;
-  listingTypeIds?: string[];
-}
-
-export interface ListingField {
-  label: string;
+export interface ListingFieldConfigItem {
   key: string;
-  scope: string; // "public"
-  schemaType: SchemaType;
-
-  enumOptions?: EnumOption[];
-
-  numberConfig?: {
-    minimum?: number;
-    maximum?: number;
-    step?: number;
+  scope?: 'public' | 'private';
+  schemaType: 'enum' | 'multi-enum' | 'text' | 'long' | 'boolean';
+  enumOptions?: Array<{
+    option: string;
+    label: string;
+  }>;
+  listingTypeConfig?: {
+    limitToListingTypeIds: boolean;
+    listingTypeIds: string[];
   };
-
-  filterConfig: FilterConfig;
-  showConfig: ShowConfig;
-  saveConfig: SaveConfig;
-
-  categoryConfig?: CategoryConfig;
-  listingTypeConfig?: ListingTypeConfig;
+  saveConfig: {
+    label: string;
+    placeholderMessage?: string;
+    isRequired: boolean;
+    requiredMessage?: string;
+  };
+  showConfig: {
+    label: string;
+    isDetail: boolean;
+  };
 }
 
-export type ListingFields = ListingField[];
-
-export interface ListingConfig {
-  enforceValidListingType: boolean;
-  listingFields: ListingFields;
-  listingTypes: ListingTypes;
+export interface CustomListingFieldInputProps {
+  key: string;
+  name: string;
+  fieldConfig: ListingFieldConfigItem;
+  defaultRequiredMessage?: string;
 }

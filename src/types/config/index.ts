@@ -4,6 +4,7 @@ export * from './configLayoutAndBranding';
 export * from './configMaps';
 export * from './configSearch';
 export * from './configUser';
+export * from './configListing';
 export * from './extendedData';
 export * from './config';
 

@@ -7,4 +7,7 @@ export const SCREENS = {
   RESET_PASSWORD: 'ResetPassword',
 
   HOME: 'Home',
+  
+  // Listing screens
+  CREATE_LISTING: 'CreateListing',
 } as const;

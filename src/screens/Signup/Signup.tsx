@@ -11,6 +11,7 @@ import {
   useRoute,
 } from '@react-navigation/native';
 import {
+  signupErrorSelector,
   signupInProgress,
   signupWithEmailPassword,
 } from '@redux/slices/auth.slice';
@@ -44,6 +45,9 @@ export const Signup: React.FC = () => {
 
   const navigation = useNavigation<SignupNavigationProp>();
   const signupInProcess = useTypedSelector(signupInProgress);
+  const signupInError = useTypedSelector(signupErrorSelector);
+  console.log('signupInError', signupInError)
+
   const config = useConfiguration();
   const { t } = useTranslation();
   const userTypes = useMemo(() => config?.user.userTypes || [], [config]);

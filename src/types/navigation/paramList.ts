@@ -12,6 +12,7 @@ export type AuthStackParamList = {
 // Main Stack
 export type AppStackParamList = {
   [SCREENS.HOME]: undefined;
+  [SCREENS.CREATE_LISTING]: undefined;
 };
 
 // bottom Stack

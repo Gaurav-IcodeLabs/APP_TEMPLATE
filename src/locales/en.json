@@ -1,1 +1,62 @@
-{}
+{
+  "CreateListing": {
+    "title": "Create a Listing",
+    "subtitle": "Choose the type of listing you want to create and fill in the details",
+    "selectTypeLabel": "What type of listing do you want to create?",
+    "selectButton": "Select This Type",
+    "daily-booking": {
+      "description": "Perfect for rentals, accommodations, or services that are booked by the day. Customers can select dates and book your offering."
+    },
+    "purchase": {
+      "description": "Ideal for selling products or items. Customers can purchase your items directly with immediate or scheduled delivery."
+    }
+  },
+  "CreateListingForm": {
+    "title": "Create {{type}} Listing",
+    "subtitle": "Fill in the details for your listing",
+    "titleLabel": "Title",
+    "titlePlaceholder": "Enter a descriptive title for your listing",
+    "titleRequired": "Title is required",
+    "titleTooLong": "Title must be less than 100 characters",
+    "descriptionLabel": "Description",
+    "descriptionPlaceholder": "Describe your listing in detail",
+    "descriptionRequired": "Description is required",
+    "descriptionTooLong": "Description must be less than 1000 characters",
+    "priceLabel": "Price",
+    "pricePlaceholder": "Enter price (USD)",
+    "priceRequired": "Price is required",
+    "priceInvalid": "Please enter a valid price",
+    "imagesLabel": "Photos",
+    "imagesRequired": "At least one photo is required to publish",
+    "saveDraft": "Save as Draft",
+    "publishListing": "Publish Listing",
+    "createDraft": "Create Draft Listing",
+    "back": "Back",
+    "success": "Success!",
+    "publishSuccess": "Published!",
+    "draftCreatedMessage": "Your listing draft has been created successfully. You can publish it later.",
+    "publishedMessage": "Your listing has been published successfully and is now live!",
+    "ok": "OK",
+    "error": "Error",
+    "createErrorMessage": "Failed to create listing. Please try again.",
+    "publishErrorMessage": "Failed to publish listing. Please try again.",
+    "noListingTypeError": "No listing type selected. Please go back and select a type.",
+    "fieldRequired": "This field is required",
+    "numberInvalid": "Please enter a valid number",
+    "textFieldPlaceholder": "Enter text",
+    "selectPlaceholder": "Select an option",
+    "multiselectPlaceholder": "Select one or more options",
+    "requiredFieldGeneric": "This field is required"
+  },
+  "ImageUpload": {
+    "addPhoto": "Add Photo",
+    "imageCount": "{{current}} of {{max}} photos",
+    "hint": "Add photos to make your listing more attractive",
+    "maxImagesTitle": "Maximum Photos Reached",
+    "maxImagesMessage": "You can upload a maximum of {{max}} photos",
+    "selectImageTitle": "Add Photo",
+    "selectImageMessage": "For demo purposes, we'll add a sample image. In production, this would open your photo library.",
+    "cancel": "Cancel",
+    "addSample": "Add Sample Photo"
+  }
+}

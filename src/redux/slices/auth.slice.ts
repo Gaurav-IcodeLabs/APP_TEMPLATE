@@ -468,6 +468,8 @@ export const selectAuthInfoError = (state: RootState) =>
   state.auth.authInfoError;
 export const signupInProgress = (state: RootState) =>
   state.auth.createUserInProgress || state.auth.loginInProgress;
+export const signupErrorSelector = (state: RootState) =>
+  state.auth.createUserError
 export const loginInProgress = (state: RootState) => state.auth.loginInProgress;
 export const loginOutInProgress = (state: RootState) =>
   state.auth.logoutInProgress;
