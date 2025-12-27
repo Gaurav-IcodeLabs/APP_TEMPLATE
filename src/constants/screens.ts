@@ -1,4 +1,6 @@
-export const SCREENS = {
+import { EDIT_LISTING_STACK } from 'features/editListing';
+
+const SCREENS = {
   // Auth screens
   ONBOARDING: 'Onboarding',
   LOGIN: 'Login',
@@ -8,3 +10,7 @@ export const SCREENS = {
 
   HOME: 'Home',
 } as const;
+
+Object.assign(SCREENS, EDIT_LISTING_STACK);
+
+export { SCREENS };
