@@ -7,26 +7,41 @@ import {
   StyleSheet,
   ScrollView,
 } from 'react-native';
-import { CustomUserFieldInputProps } from '@appTypes/config';
-import { SignupFormValues } from '../Signup.types';
+import { UserFieldConfigItem } from '@appTypes/config';
+import { ListingField } from '@appTypes/config/configListing';
+import { SignupFormValues } from '../../screens/Signup/Signup.types';
 import { Control, Controller } from 'react-hook-form';
 import { getLabel } from './CustomExtendedDataField';
 
-interface CustomFieldSingleSelectProps
-  extends Omit<CustomUserFieldInputProps, 'key' | 'defaultRequiredMessage'> {
+type CustomFieldSingleSelectPropsBase = {
+  name: string;
   control: Control<SignupFormValues>;
-}
+};
 
-const CustomFieldSingleSelect = ({
-  control,
-  fieldConfig,
-  name,
-}: CustomFieldSingleSelectProps) => {
+type CustomFieldSingleSelectPropsUser = CustomFieldSingleSelectPropsBase & {
+  fieldType: 'user';
+  fieldConfig: UserFieldConfigItem;
+};
+
+type CustomFieldSingleSelectPropsListing = CustomFieldSingleSelectPropsBase & {
+  fieldType: 'listing';
+  fieldConfig: ListingField;
+};
+
+type CustomFieldSingleSelectProps = CustomFieldSingleSelectPropsUser | CustomFieldSingleSelectPropsListing;
+
+const CustomFieldSingleSelect = (props: CustomFieldSingleSelectProps) => {
+  const { control, fieldConfig, name, fieldType } = props;
   const [modalVisible, setModalVisible] = useState(false);
 
   // Get options from config or use default options for testing
   const { enumOptions = [], saveConfig } = fieldConfig || {};
-  const { placeholderMessage } = saveConfig || {};
+  
+  // Handle different placeholder message structures
+  const placeholderMessage =
+    fieldType === 'user' && 'placeholderMessage' in (saveConfig || {})
+      ? (saveConfig as any)?.placeholderMessage
+      : undefined;
   const placeholder = placeholderMessage || 'Select an option';
   const label = getLabel(fieldConfig);
 

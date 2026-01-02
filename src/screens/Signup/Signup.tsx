@@ -31,7 +31,7 @@ import { SignupPasswordInputField } from './components/SignupPasswordInputField'
 import { SignupPhoneNumberInputField } from './components/SignupPhoneNumberInputField';
 import { TermsAndPolicy } from './components/TermsAndPolicy';
 import { UserTypeField } from './components/UserTypeField';
-import { getSignUpSchema, getSoleUserTypeMaybe } from './helper';
+import { getSignUpSchema, getSoleUserTypeMaybe } from './signup.helper';
 import { SignupFormValues } from './Signup.types';
 
 type SignupRouteProp = RouteProp<AuthStackParamList, 'Signup'>;

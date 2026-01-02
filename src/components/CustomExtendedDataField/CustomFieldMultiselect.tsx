@@ -1,21 +1,30 @@
-import React from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { CustomUserFieldInputProps } from '@appTypes/config';
-import { SignupFormValues } from '../Signup.types';
-import { Control, Controller } from 'react-hook-form';
-import { getLabel } from './CustomExtendedDataField';
+import { UserFieldConfigItem } from '@appTypes/config';
+import { ListingField } from '@appTypes/config/configListing';
 import { CommonText } from '@components/index';
+import { Control, Controller } from 'react-hook-form';
+import { StyleSheet, TouchableOpacity, View } from 'react-native';
+import { SignupFormValues } from '../../screens/Signup/Signup.types';
+import { getLabel } from './CustomExtendedDataField';
 
-interface CustomFieldMultiSelectProps
-  extends Omit<CustomUserFieldInputProps, 'key' | 'defaultRequiredMessage'> {
+type CustomFieldMultiSelectPropsBase = {
+  name: string;
   control: Control<SignupFormValues>;
-}
+};
 
-export const CustomFieldMultiselect = ({
-  control,
-  fieldConfig,
-  name,
-}: CustomFieldMultiSelectProps) => {
+type CustomFieldMultiSelectPropsUser = CustomFieldMultiSelectPropsBase & {
+  fieldType: 'user';
+  fieldConfig: UserFieldConfigItem;
+};
+
+type CustomFieldMultiSelectPropsListing = CustomFieldMultiSelectPropsBase & {
+  fieldType: 'listing';
+  fieldConfig: ListingField;
+};
+
+type CustomFieldMultiSelectProps = CustomFieldMultiSelectPropsUser | CustomFieldMultiSelectPropsListing;
+
+export const CustomFieldMultiselect = (props: CustomFieldMultiSelectProps) => {
+  const { control, fieldConfig, name } = props;
   const { enumOptions = [] } = fieldConfig || {};
   const label = getLabel(fieldConfig);
 

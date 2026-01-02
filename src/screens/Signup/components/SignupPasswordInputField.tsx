@@ -1,5 +1,4 @@
 import { CommonTextInput } from '@components/index';
-import React from 'react';
 import { Control } from 'react-hook-form';
 import { SignupFormValues } from '../Signup.types';
 

@@ -1649,7 +1649,7 @@ const union = <T extends string, U extends Record<T, any>>(
 ): U[] => {
   const all = [...arr1, ...arr2];
   const map = new Map(all.map(obj => [obj[key], obj]));
-  return [...map.values()];
+  return Array.from(map.values());
 };
 
 // For debugging, it becomes sometimes important to be able to merge and overwrite with local values
@@ -2208,7 +2208,7 @@ export const mergeConfig = (
   // Note: It might make sense that 0 handling is different for default-inquiry process.
   //       With the built-in code flow, you can only remove price altogether from listing type using default-inquiries.
   const listingMinimumPriceSubUnits =
-    getListingMinimumPrice(configAsset?.transactionSize || {}) ||
+    getListingMinimumPrice(configAsset?.transactionSize) ||
     defaultConfigs.listingMinimumPriceSubUnits;
 
   const validHostedCategories = validateCategoryConfig(configAsset?.categories);

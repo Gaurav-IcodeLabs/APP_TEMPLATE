@@ -1,9 +1,8 @@
-import React from 'react';
-import { StyleSheet, Text, View, TouchableOpacity } from 'react-native';
-import { Control, Controller } from 'react-hook-form';
 import { CheckBox } from '@components/CheckBox/CheckBox';
-import { SignupFormValues } from '../Signup.types';
+import { Control, Controller } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { SignupFormValues } from '../Signup.types';
 
 interface TermsAndPolicyProps {
   control: Control<SignupFormValues>;

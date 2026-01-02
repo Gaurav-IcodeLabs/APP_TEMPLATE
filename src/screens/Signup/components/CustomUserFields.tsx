@@ -1,7 +1,7 @@
 import { useConfiguration } from '@context/configurationContext';
 import { getPropsForCustomUserFieldInputs } from '@util/userHelpers';
 import { View } from 'react-native';
-import CustomExtendedDataField from './CustomExtendedDataField';
+import CustomExtendedDataField from '../../../components/CustomExtendedDataField/CustomExtendedDataField';
 import { useTranslation } from 'react-i18next';
 import { Control } from 'react-hook-form';
 import { SignupFormValues } from '../Signup.types';
