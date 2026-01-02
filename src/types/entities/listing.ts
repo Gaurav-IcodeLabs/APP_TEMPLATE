@@ -4,13 +4,15 @@ import { User, CurrentUser } from './user';
 import { LISTING_STATES } from '../../constants';
 
 // Listing state type
-export type ListingState = typeof LISTING_STATES[number];
+export type ListingState = (typeof LISTING_STATES)[number];
 
-export interface ListingAttributes {
+export interface DeletedListingAttributes {
+  deleted: boolean;
+}
+export interface ListingAttributes extends DeletedListingAttributes {
   title: string;
   description?: string;
   geolocation?: LatLng;
-  deleted?: boolean;
   state?: ListingState;
   price?: Money;
   publicData?: Record<string, any>;
@@ -25,10 +27,6 @@ export interface OwnListingAttributes {
   price?: Money;
   availabilityPlan?: AvailabilityPlan;
   publicData: Record<string, any>;
-}
-
-export interface DeletedListingAttributes {
-  deleted: boolean;
 }
 
 export interface AvailabilityPlan {
@@ -48,7 +46,7 @@ export interface AvailabilityEntry {
 export interface Listing {
   id: UUID;
   type: 'listing';
-  attributes: ListingAttributes | DeletedListingAttributes;
+  attributes: ListingAttributes;
   author?: User;
   images?: Image[];
 }
@@ -57,7 +55,7 @@ export interface Listing {
 export interface OwnListing {
   id: UUID;
   type: 'ownListing';
-  attributes: OwnListingAttributes | DeletedListingAttributes;
+  attributes: OwnListingAttributes;
   author?: CurrentUser;
   images?: Image[];
 }

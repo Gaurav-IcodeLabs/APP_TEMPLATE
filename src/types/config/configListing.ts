@@ -84,9 +84,9 @@ export interface ListingTypeConfig {
 }
 
 export interface ListingField {
-  label: string;
+  label?: string;
   key: string;
-  scope: string; // "public"
+  scope: 'private' | 'protected' | 'public' | 'meta';
   schemaType: SchemaType;
 
   enumOptions?: EnumOption[];
