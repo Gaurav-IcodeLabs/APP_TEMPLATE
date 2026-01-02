@@ -1,5 +1,5 @@
 import { SCREENS } from '@constants/screens';
-import { EditListingStackParam } from 'features/editListing/types/navigation.types';
+import { EditListingWizardParam } from 'features/editListing/types/navigation.types';
 
 // Auth Stack
 export type AuthStackParamList = {
@@ -14,7 +14,7 @@ export type AuthStackParamList = {
 export type AppStackParamList = {
   [SCREENS.HOME]: undefined;
 }
-& EditListingStackParam;
+& EditListingWizardParam;
 
 // bottom Stack
 export type BottomTabParamList = {};

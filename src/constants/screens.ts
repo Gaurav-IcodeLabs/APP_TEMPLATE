@@ -1,4 +1,4 @@
-import { EDIT_LISTING_STACK } from 'features/editListing';
+import { EDIT_LISTING_WIZARD } from 'features/editListing';
 
 const SCREENS = {
   // Auth screens
@@ -11,6 +11,6 @@ const SCREENS = {
   HOME: 'Home',
 } as const;
 
-Object.assign(SCREENS, EDIT_LISTING_STACK);
+Object.assign(SCREENS, EDIT_LISTING_WIZARD);
 
 export { SCREENS };
