@@ -14,12 +14,13 @@ import {
   signupInProgress,
   signupWithEmailPassword,
 } from '@redux/slices/auth.slice';
+import { ENV } from '@constants/env';
 import { useAppDispatch, useTypedSelector } from '@redux/store';
 import { getNonUserFieldParams, pickUserFieldsData } from '@util/userHelpers';
 import { useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
-import { ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { ScrollView, StyleSheet, TouchableOpacity, View, Alert, Platform } from 'react-native';
 import type { UserTypeConfigItem } from '../../types/config/configUser';
 import { AuthStackParamList } from '../../types/navigation/paramList';
 import CustomUserFields from './components/CustomUserFields';
@@ -33,6 +34,9 @@ import { TermsAndPolicy } from './components/TermsAndPolicy';
 import { UserTypeField } from './components/UserTypeField';
 import { getSignUpSchema, getSoleUserTypeMaybe } from './helper';
 import { SignupFormValues } from './Signup.types';
+import { GoogleSignInButton } from '../../features/auth/google/components';
+import { useGoogleAuth } from '../../features/auth/google';
+import { signupWithIdp, selectSignupWithIdpInProgress } from '../../features/auth/idpAuth.slice';
 
 type SignupRouteProp = RouteProp<AuthStackParamList, 'Signup'>;
 type SignupNavigationProp = NavigationProp<AuthStackParamList, 'Signup'>;
@@ -41,9 +45,10 @@ export const Signup: React.FC = () => {
   const route = useRoute<SignupRouteProp>();
   const preselectedUserType = route.params?.userType;
   const dispatch = useAppDispatch();
-
   const navigation = useNavigation<SignupNavigationProp>();
   const signupInProcess = useTypedSelector(signupInProgress);
+  const googleSignupInProgress = useTypedSelector(selectSignupWithIdpInProgress);
+   const idpClientId = ENV.GOOGLE_WEB_CLIENT_ID;
   const config = useConfiguration();
   const { t } = useTranslation();
   const userTypes = useMemo(() => config?.user.userTypes || [], [config]);
@@ -52,6 +57,7 @@ export const Signup: React.FC = () => {
   const [selectedUserType, setSelectedUserType] = useState<string>(
     preselectedUserType || getSoleUserTypeMaybe(userTypes) || '',
   );
+  const { signIn: googleSignIn, isLoading: googleSignInLoading, errorMessage: googleErrorMessage } = useGoogleAuth();
 
   const { control, handleSubmit } = useForm<SignupFormValues>({
     defaultValues: {
@@ -136,6 +142,37 @@ export const Signup: React.FC = () => {
     dispatch(signupWithEmailPassword(params));
   };
 
+  const handleGoogleSignup = async () => {
+    try {
+      if (!selectedUserType) {
+        Alert.alert('Error', 'Please select a user type first');
+        return;
+      }
+      const googleResult = await googleSignIn();
+      console.log('idpClientId', idpClientId)
+
+
+      console.log('googleResult', googleResult)
+      
+      await dispatch(
+        signupWithIdp({
+          idpId: googleResult.idpId,
+          idpToken: googleResult.idpToken,
+          idpClientId:Platform.OS==='android'?ENV.GOOGLE_WEB_CLIENT_ID:ENV.GOOGLE_IOS_CLIENT_ID,
+          email: googleResult.email || '',
+          firstName: googleResult.firstName,
+          lastName: googleResult.lastName,
+        }),
+      ).unwrap();
+
+      Alert.alert('Success', 'Account created successfully!');
+    } catch (error: any) {
+      console.log('error........', JSON.stringify(error));
+      const errorMessage = error?.message || googleErrorMessage || 'Google signup failed';
+      Alert.alert('Google Signup Failed >>>>.', errorMessage);
+    }
+  };
+
   const handleLoginPress = () => navigation.navigate(SCREENS.LOGIN);
 
   return (
@@ -188,6 +225,20 @@ export const Signup: React.FC = () => {
               disabled={signupInProcess}
               //   // don't use disabled prop = isValid because it will prevent the error to be displayed on cross field validation
             />
+
+            <View style={styles.divider}>
+              <View style={styles.dividerLine} />
+              <CommonText style={styles.dividerText}>or</CommonText>
+              <View style={styles.dividerLine} />
+            </View>
+
+            <GoogleSignInButton
+              onPress={handleGoogleSignup}
+              loading={googleSignInLoading || googleSignupInProgress}
+              disabled={googleSignInLoading || googleSignupInProgress}
+              title="Sign up with Google"
+            />
+
             <View style={styles.loginContainer}>
               <CommonText style={styles.loginText}>
                 {t('Authentication.haveAnAccount')}{' '}
@@ -217,6 +268,21 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginBottom: 24,
     textAlign: 'center',
+  },
+  divider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 20,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: colors.grey,
+  },
+  dividerText: {
+    marginHorizontal: 16,
+    color: colors.grey,
+    fontSize: 14,
   },
   loginContainer: {
     flexDirection: 'row',

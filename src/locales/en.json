@@ -1,1 +1,15 @@
-{}
+{
+  "Authentication": {
+    "login": "Login",
+    "signup": "Sign up",
+    "haveAnAccount": "Already have an account?",
+    "dontHaveAnAccount": "Don't have an account?",
+    "googleSignIn": "Sign in with Google",
+    "googleSignUp": "Sign up with Google",
+    "googleLoginFailed": "Google login failed",
+    "googleSignupFailed": "Google signup failed",
+    "loginSuccess": "Login successful!",
+    "signupSuccess": "Account created successfully!",
+    "selectUserType": "Please select a user type first"
+  }
+}

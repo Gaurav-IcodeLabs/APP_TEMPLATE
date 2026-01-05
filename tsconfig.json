@@ -8,6 +8,7 @@
       "@config/*": ["config/*"],
       "@constants/*": ["constants/*"],
       "@context/*": ["context/*"],
+      "@features/*": ["features/*"],
       // "@hooks/*": ["hooks/*"],
       "@locales/*": ["locales/*"],
       "@navigators/*": ["navigators/*"],

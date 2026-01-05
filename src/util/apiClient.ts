@@ -9,6 +9,7 @@ import appSettings from '@config/settings';
 import { ENV } from '@constants/env';
 import { ApiErrorData } from '@appTypes/index';
 import { types as sdkTypes, transit } from './sdkLoader';
+import sharetribeTokenStore from '@redux/sharetribeTokenStore';
 
 /**
  * Type handler configuration for SDK types
@@ -98,7 +99,20 @@ const createApiClient = (): AxiosInstance => {
 
   // Request interceptor - serialize body if needed
   instance.interceptors.request.use(
-    config => {
+    async config => {
+      // Add authentication token if available
+      try {
+        const tokenStore = sharetribeTokenStore({ 
+          clientId: ENV.SHARETRIBE_SDK_CLIENT_ID 
+        });
+        const token = await tokenStore.getCookieToken();
+        if (token) {
+          config.headers.Cookie = token;
+        }
+      } catch (error) {
+        console.warn('Failed to retrieve authentication token:', error);
+      }
+
       const contentType = config.headers?.['Content-Type'] as
         | string
         | undefined;

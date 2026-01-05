@@ -46,7 +46,7 @@ export interface GoogleSignInParams {
  */
 export interface GoogleSignInResponse {
   /** ID token from Google */
-  idToken: string;
+  idpToken: string;
   /** Server auth code for backend token exchange */
   serverAuthCode?: string;
   /** User's email */
@@ -57,5 +57,13 @@ export interface GoogleSignInResponse {
   photoUrl?: string;
   /** User's Google ID */
   userId?: string;
+  /** IDP identifier for Sharetribe */
+  idpId: string;
+  /** IDP client ID for Sharetribe */
+  idpClientId: string;
+  /** User's first name */
+  firstName: string;
+  /** User's last name */
+  lastName: string;
 }
 

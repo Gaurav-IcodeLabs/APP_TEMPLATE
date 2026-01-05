@@ -8,6 +8,7 @@ import {
   GoogleSignInParams,
   GoogleSignInResponse,
 } from './types';
+import { signInWithGoogle as googleSignInHelper } from './google.helper';
 
 // ================ Initial State ================ //
 
@@ -44,24 +45,11 @@ export const signInWithGoogle = createAsyncThunk<
   'googleAuth/signInWithGoogle',
   async (params, { rejectWithValue }) => {
     try {
-      // TODO: Implement actual Google Sign-In logic here
-      // This is where you would integrate with @react-native-google-signin/google-signin
-      // or your web Google OAuth implementation
-
-      // Example placeholder implementation:
-      // const result = await GoogleSignin.signIn();
-      // return {
-      //   idToken: result.idToken,
-      //   serverAuthCode: result.serverAuthCode,
-      //   email: result.user.email,
-      //   displayName: result.user.name,
-      //   photoUrl: result.user.photo,
-      //   userId: result.user.id,
-      // };
-
-      throw new Error('Google Sign-In not implemented yet');
+      const result = await googleSignInHelper();
+      console.log('result',result);
+      return result;
     } catch (error: any) {
-      log.error(error, 'google-sign-in-failed', { params });
+      log.error(error, 'google-sign-in-failed-1', { params });
 
       // Map error to GoogleAuthError
       const googleError: GoogleAuthError = {

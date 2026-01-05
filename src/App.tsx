@@ -1,6 +1,6 @@
 /* eslint-disable react-native/no-inline-styles */
 import { store } from '@redux/store';
-import { configureGoogleSignIn } from 'features/auth/google/google.helper';
+import { configureGoogleSignIn } from './features/auth/google/google.helper';
 import { useEffect } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';

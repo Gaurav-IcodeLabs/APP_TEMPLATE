@@ -20,6 +20,7 @@ const customConfig = {
       '@config': path.resolve(__dirname, 'src/config'),
       '@constants': path.resolve(__dirname, 'src/constants'),
       '@context': path.resolve(__dirname, 'src/context'),
+      '@features': path.resolve(__dirname, 'src/features'),
       //   '@hooks': path.resolve(__dirname, 'src/hooks'),
       '@locales': path.resolve(__dirname, 'src/locales'),
       '@navigators': path.resolve(__dirname, 'src/navigators'),

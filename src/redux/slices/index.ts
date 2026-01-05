@@ -3,3 +3,4 @@ export { default as marketplaceData } from './marketplaceData.slice';
 export { default as auth } from './auth.slice';
 export { default as user } from './user.slice';
 export { default as googleAuth } from '../../features/auth/google';
+export { default as idpAuth } from '../../features/auth/idpAuth.slice';

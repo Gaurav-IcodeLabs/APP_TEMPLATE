@@ -11,7 +11,7 @@
     "lint": "eslint .",
     "start": "yarn clean && ENVFILE=.env react-native start --reset-cache --client-logs",
     "test": "jest",
-    "postinstall": "cd ios && bundle exec pod install && cd .."
+    "postinstall": "cd ios && pod install && cd .."
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

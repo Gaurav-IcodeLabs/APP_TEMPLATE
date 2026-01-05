@@ -2,6 +2,7 @@ import UIKit
 import React
 import React_RCTAppDelegate
 import ReactAppDependencyProvider
+import GoogleSignIn
 
 @main
 class AppDelegate: UIResponder, UIApplicationDelegate {
@@ -34,11 +35,10 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     return true
   }
 
-  // ⬇️ Add this method
-  override func application(_ app: UIApplication, open url: URL, options: [UIApplication.OpenURLOptionsKey : Any] = [:]) -> Bool {
-    // Add any other URL handlers you're using (e.g. Facebook SDK)
-    return ApplicationDelegate.shared.application(app, open: url, options: options) ||
-           GIDSignIn.sharedInstance.handle(url)
+  // ⬇️ Add this method for URL handling
+  func application(_ app: UIApplication, open url: URL, options: [UIApplication.OpenURLOptionsKey : Any] = [:]) -> Bool {
+    // Handle Google Sign-In URL
+    return GIDSignIn.sharedInstance.handle(url)
   }
 
    private func showSplashScreen() {

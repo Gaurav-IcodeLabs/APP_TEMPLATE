@@ -1,4 +1,4 @@
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, TouchableOpacity, View, Alert } from 'react-native';
 import React from 'react';
 import { useAppDispatch, useTypedSelector } from '@redux/store';
 import { login, loginInProgress } from '@redux/slices/auth.slice';
@@ -14,6 +14,9 @@ import { LoginEmailInputField } from './components/LoginEmailInputField';
 import { LoginPasswordInputField } from './components/LoginPasswordInputField';
 import { LoginFormValues } from './Login.types';
 import { getLoginSchema } from './helper';
+import { GoogleSignInButton } from '../../features/auth/google/components';
+import { useGoogleAuth } from '../../features/auth/google';
+import { loginWithIdp, selectLoginWithIdpInProgress } from '../../features/auth/idpAuth.slice';
 
 type LoginNavigationProp = NavigationProp<AuthStackParamList, 'Login'>;
 
@@ -21,7 +24,9 @@ export const Login: React.FC = () => {
   const dispatch = useAppDispatch();
   const navigation = useNavigation<LoginNavigationProp>();
   const loginInProcess = useTypedSelector(loginInProgress);
+  const googleLoginInProgress = useTypedSelector(selectLoginWithIdpInProgress);
   const { t } = useTranslation();
+  const { signIn: googleSignIn, isLoading: googleSignInLoading, errorMessage: googleErrorMessage } = useGoogleAuth();
 
   const onSubmit = async (values: LoginFormValues) => {
     try {
@@ -30,9 +35,31 @@ export const Login: React.FC = () => {
           username: values.email,
           password: values.password,
         }),
-      );
-    } catch (error) {
-      console.log('error', error);
+      ).unwrap();
+    } catch (error: any) {
+      console.log('Login error:', error);
+      Alert.alert('Login Failed', error?.message || 'An error occurred during login');
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    try {
+      const googleResult = await googleSignIn();
+      
+      await dispatch(
+        loginWithIdp({
+          idpId: googleResult.idpId,
+          idpClientId: googleResult.idpClientId,
+          idpToken: googleResult.idToken,
+          email: googleResult.email,
+        }),
+      ).unwrap();
+
+      Alert.alert('Success', 'Login successful!');
+    } catch (error: any) {
+      console.log('Google login error:', error);
+      const errorMessage = error?.message || googleErrorMessage || 'Google login failed';
+      Alert.alert('Google Login Failed', errorMessage);
     }
   };
 
@@ -61,11 +88,17 @@ export const Login: React.FC = () => {
         disabled={loginInProcess}
       />
 
-      <Button
-        title="Login with Google"
-        // onPress={handleGoogleSignIn}
-        // loader={googleSignInProgress}
-        // disabled={googleSignInProgress}
+      <View style={styles.divider}>
+        <View style={styles.dividerLine} />
+        <CommonText style={styles.dividerText}>or</CommonText>
+        <View style={styles.dividerLine} />
+      </View>
+
+      <GoogleSignInButton
+        onPress={handleGoogleLogin}
+        loading={googleSignInLoading || googleLoginInProgress}
+        disabled={googleSignInLoading || googleLoginInProgress}
+        title="Sign in with Google"
       />
 
       <View style={styles.loginContainer}>
@@ -94,6 +127,21 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginBottom: 24,
     textAlign: 'center',
+  },
+  divider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 20,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: colors.grey,
+  },
+  dividerText: {
+    marginHorizontal: 16,
+    color: colors.grey,
+    fontSize: 14,
   },
   loginContainer: {
     flexDirection: 'row',

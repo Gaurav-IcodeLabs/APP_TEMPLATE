@@ -20,6 +20,15 @@ const sharetribeTokenStore = ({ clientId }: { clientId: string }) => {
         return null;
       }
     },
+    getCookieToken: async () => {
+      try {
+        const token = await AsyncStorage.getItem(storageKey);
+        return token ? `${storageKey}=${token}` : null;
+      } catch (error) {
+        console.error('Error getting cookie token:', error);
+        return null;
+      }
+    },
     removeToken: async () => {
       try {
         await AsyncStorage.removeItem(storageKey);
