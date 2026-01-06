@@ -4,8 +4,8 @@ import { GoogleSignInResponse } from './types';
 
 export const configureGoogleSignIn = () => {
   GoogleSignin.configure({
-    webClientId: ENV.GOOGLE_WEB_CLIENT_ID, // From Google Cloud → Credentials → Web client (auto created by Firebase)
-    iosClientId: ENV.GOOGLE_IOS_CLIENT_ID, // Only needed on iOS – this is the iOS-specific client ID
+    webClientId: '105323808148-q69q5jl92adv8cu1gpmfrtg6gmsgiqmn.apps.googleusercontent.com', // Hardcoded for testing
+    iosClientId: '105323808148-3b8sjcash69abmfrg0e0r458k8ma4ngg.apps.googleusercontent.com', // Hardcoded for testing
     offlineAccess: true, // Needed if you want refresh tokens / server auth code
     forceCodeForRefreshToken: true, // Important for getting a server auth code (recommended)
 
@@ -23,15 +23,17 @@ export const signInWithGoogle = async (): Promise<GoogleSignInResponse> => {
       showPlayServicesUpdateDialog: true,
     });
 
-    // 2. Clear any previous sign-in (optional – only if you want fresh login every time)
-    const hasPrevious = await GoogleSignin.hasPreviousSignIn();
-    if (hasPrevious) {
+    // 2. Always sign out first to clear any cached credentials
+    try {
       await GoogleSignin.signOut();
+    } catch (error) {
+      // Ignore sign out errors if user wasn't signed in
+      console.log('Sign out error (expected if not signed in):', error);
     }
 
     // 3. Trigger sign-in
     const userInfo = await GoogleSignin.signIn();
-    const idpClientId = ENV.GOOGLE_WEB_CLIENT_ID;
+    const idpClientId = '105323808148-q69q5jl92adv8cu1gpmfrtg6gmsgiqmn.apps.googleusercontent.com'; // Hardcoded for testing
 
     console.log('Google Sign-In userInfo:', JSON.stringify(userInfo, null, 2));
 
