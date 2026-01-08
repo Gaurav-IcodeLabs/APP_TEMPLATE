@@ -26,21 +26,24 @@ const EditListingAvailability: React.FC = () => {
   const { control, setValue } = useFormContext<EditListingForm>();
   const [isModalVisible, setIsModalVisible] = useState(false);
 
-  const availabilityPlan = useWatch<EditListingForm>({
+  const { isScheduleExists, availabilityTimezone } = useWatch({
     control,
     name: 'availabilityPlan',
-  }) as AvailabilityPlan | undefined;
-
+    compute: (data: EditListingForm['availabilityPlan']) => ({
+      isScheduleExists: data?.entries.length && data?.entries.length > 0 || data?.timezone ? true : false,
+      availabilityTimezone: data?.timezone
+    })
+  });
   // Don't show if availability is not enabled for this listing type
   if (!isShowAvailability) {
     return null;
   }
 
-  const timezone = availabilityPlan?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const timezone = availabilityTimezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
 
   const handleOpenModal = () => {
     // Initialize with default timezone if not set
-    if (!availabilityPlan) {
+    if (!isScheduleExists) {
       setValue('availabilityPlan', {
         type: 'availability-plan/time',
         timezone,
@@ -59,7 +62,7 @@ const EditListingAvailability: React.FC = () => {
 
       <TouchableOpacity style={styles.setScheduleButton} onPress={handleOpenModal}>
         <Text style={styles.setScheduleButtonText}>
-          {availabilityPlan?.entries?.length ? 'Edit default schedule' : 'Set default schedule'}
+          {isScheduleExists ? 'Edit default schedule' : 'Set default schedule'}
         </Text>
       </TouchableOpacity>
 
@@ -90,14 +93,10 @@ const AvailabilityModal: React.FC<AvailabilityModalProps> = ({
   timezone,
   weekdays,
 }) => {
-  const { control, setValue } = useFormContext<EditListingForm>();
-  
-  const availabilityPlan = useWatch<EditListingForm>({
-    control,
-    name: 'availabilityPlan',
-  }) as AvailabilityPlan | undefined;
+  const { setValue, getValues } = useFormContext<EditListingForm>();
 
   const handleTimezoneChange = (newTimezone: string) => {
+    const availabilityPlan = getValues('availabilityPlan')
     setValue('availabilityPlan', {
       type: 'availability-plan/time',
       timezone: newTimezone,
