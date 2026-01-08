@@ -72,7 +72,7 @@ const EditListingDelivery = () => {
           <View
             style={[
               styles.deliveryFields,
-              !pickupEnabled && showMultipleDelivery && styles.disabledFields,
+              !pickupEnabled && showMultipleDelivery ? styles.disabledFields : undefined,
             ]}
             pointerEvents={
               !pickupEnabled && showMultipleDelivery ? 'none' : 'auto'
@@ -98,22 +98,18 @@ const EditListingDelivery = () => {
                       <TouchableOpacity
                         style={[
                           styles.addressInput,
-                          error && styles.addressInputError,
-                          !pickupEnabled &&
-                            showMultipleDelivery &&
-                            styles.disabledInput,
+                          error ? styles.addressInputError : undefined,
+                          !pickupEnabled && showMultipleDelivery ? styles.disabledInput : undefined,
                         ]}
                         onPress={() => setIsLocationModalVisible(true)}
                         activeOpacity={0.7}
-                        disabled={!pickupEnabled && showMultipleDelivery}
+                        disabled={!pickupEnabled && showMultipleDelivery ? true : false}
                       >
                         <Text
                           style={[
                             styles.addressText,
-                            !value?.address && styles.addressPlaceholder,
-                            !pickupEnabled &&
-                              showMultipleDelivery &&
-                              styles.disabledText,
+                            !value?.address ? styles.addressPlaceholder : undefined,
+                            !pickupEnabled && showMultipleDelivery ? styles.disabledText : undefined,
                           ]}
                         >
                           {value?.address || 'Search for a pickup location...'}
@@ -162,7 +158,7 @@ const EditListingDelivery = () => {
           <View
             style={[
               styles.deliveryFields,
-              !shippingEnabled && showMultipleDelivery && styles.disabledFields,
+              !shippingEnabled && showMultipleDelivery ? styles.disabledFields : undefined,
             ]}
             pointerEvents={
               !shippingEnabled && showMultipleDelivery ? 'none' : 'auto'
