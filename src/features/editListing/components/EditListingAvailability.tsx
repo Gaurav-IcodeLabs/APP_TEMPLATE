@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { useFormContext, useWatch } from 'react-hook-form';
-import { EditListingForm } from '../types/editListingForm.type';
+import { EditListingForm, AvailabilityException } from '../types/editListingForm.type';
 import { useIsShowAvailability } from '../hooks/useIsShowAvailability';
-import { AvailabilityModal } from './availability';
+import { AvailabilityModal, AvailabilityExceptionModal } from './availability';
 
 const WEEKDAYS = [
   { key: 'mon', label: 'Monday' },
@@ -24,13 +24,15 @@ const EditListingAvailability: React.FC = () => {
   const isShowAvailability = useIsShowAvailability();
   const { control, setValue } = useFormContext<EditListingForm>();
   const [isModalVisible, setIsModalVisible] = useState(false);
+  const [isExceptionModalVisible, setIsExceptionModalVisible] = useState(false);
 
-  const { isScheduleExists, availabilityTimezone } = useWatch({
+  const { isScheduleExists, availabilityTimezone, exceptions } = useWatch({
     control,
     name: 'availabilityPlan',
     compute: (data: EditListingForm['availabilityPlan']) => ({
       isScheduleExists: data?.entries.length && data?.entries.length > 0 || data?.timezone ? true : false,
-      availabilityTimezone: data?.timezone
+      availabilityTimezone: data?.timezone,
+      exceptions: data?.exceptions || []
     })
   });
   // Don't show if availability is not enabled for this listing type
@@ -41,15 +43,53 @@ const EditListingAvailability: React.FC = () => {
   const timezone = availabilityTimezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
 
   const handleOpenModal = () => {
-    // Initialize with default timezone if not set
-    if (!isScheduleExists) {
-      setValue('availabilityPlan', {
-        type: 'availability-plan/time',
-        timezone,
-        entries: [],
-      });
-    }
+    // Don't initialize form values here - let the modal handle it with local state
     setIsModalVisible(true);
+  };
+
+  const handleSaveException = (exception: AvailabilityException) => {
+    const currentPlan = control._formValues.availabilityPlan;
+    const currentExceptions = currentPlan?.exceptions || [];
+    
+    setValue('availabilityPlan', {
+      ...currentPlan!,
+      exceptions: [...currentExceptions, exception],
+    });
+  };
+
+  const handleDeleteException = (index: number) => {
+    Alert.alert(
+      'Delete Exception',
+      'Are you sure you want to delete this exception?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => {
+            const currentPlan = control._formValues.availabilityPlan;
+            const currentExceptions = currentPlan?.exceptions || [];
+            const newExceptions = currentExceptions.filter((_: AvailabilityException, i: number) => i !== index);
+            
+            setValue('availabilityPlan', {
+              ...currentPlan!,
+              exceptions: newExceptions,
+            });
+          },
+        },
+      ]
+    );
+  };
+
+  const formatExceptionDate = (isoString: string) => {
+    const date = new Date(isoString);
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+    });
   };
 
   return (
@@ -65,11 +105,52 @@ const EditListingAvailability: React.FC = () => {
         </Text>
       </TouchableOpacity>
 
+      {isScheduleExists && (
+        <>
+          <TouchableOpacity 
+            style={[styles.setScheduleButton, styles.exceptionButton]} 
+            onPress={() => setIsExceptionModalVisible(true)}
+          >
+            <Text style={styles.setScheduleButtonText}>Add an availability exception</Text>
+          </TouchableOpacity>
+
+          {exceptions.length > 0 && (
+            <View style={styles.exceptionsContainer}>
+              <Text style={styles.exceptionsTitle}>Exceptions:</Text>
+              {exceptions.map((exception, index) => (
+                <View key={index} style={styles.exceptionItem}>
+                  <View style={styles.exceptionInfo}>
+                    <Text style={styles.exceptionText}>
+                      {formatExceptionDate(exception.start)} - {formatExceptionDate(exception.end)}
+                    </Text>
+                    <Text style={styles.exceptionSeats}>
+                      {exception.seats === 0 ? 'Unavailable' : `${exception.seats} seat${exception.seats !== 1 ? 's' : ''}`}
+                    </Text>
+                  </View>
+                  <TouchableOpacity 
+                    onPress={() => handleDeleteException(index)}
+                    style={styles.deleteExceptionButton}
+                  >
+                    <Text style={styles.deleteExceptionText}>🗑</Text>
+                  </TouchableOpacity>
+                </View>
+              ))}
+            </View>
+          )}
+        </>
+      )}
+
       <AvailabilityModal
         visible={isModalVisible}
         onClose={() => setIsModalVisible(false)}
         timezone={timezone}
         weekdays={WEEKDAYS}
+      />
+
+      <AvailabilityExceptionModal
+        visible={isExceptionModalVisible}
+        onClose={() => setIsExceptionModalVisible(false)}
+        onSave={handleSaveException}
       />
     </View>
   );
@@ -103,11 +184,55 @@ const styles = StyleSheet.create({
     borderColor: '#4A90E2',
     borderRadius: 4,
     alignSelf: 'flex-start',
+    marginBottom: 12,
+  },
+  exceptionButton: {
+    marginTop: 4,
   },
   setScheduleButtonText: {
     color: '#4A90E2',
     fontSize: 16,
     fontWeight: '500',
+  },
+  exceptionsContainer: {
+    marginTop: 16,
+    padding: 12,
+    backgroundColor: '#f8f8f8',
+    borderRadius: 8,
+  },
+  exceptionsTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 12,
+  },
+  exceptionItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    backgroundColor: '#fff',
+    borderRadius: 4,
+    marginBottom: 8,
+  },
+  exceptionInfo: {
+    flex: 1,
+  },
+  exceptionText: {
+    fontSize: 14,
+    color: '#333',
+    marginBottom: 4,
+  },
+  exceptionSeats: {
+    fontSize: 12,
+    color: '#666',
+  },
+  deleteExceptionButton: {
+    padding: 8,
+  },
+  deleteExceptionText: {
+    fontSize: 18,
   },
 });
 

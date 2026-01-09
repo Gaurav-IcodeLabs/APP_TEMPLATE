@@ -15,11 +15,12 @@ export type AvailabilityPlan = {
   type: 'availability-plan/time';
   timezone: string; // IANA timezone (e.g., "America/New_York")
   entries: AvailabilityPlanEntry[];
+  exceptions?: AvailabilityException[]; // Optional availability exceptions
 };
 
 export type AvailabilityException = {
-  start: Date; // Start of exception (inclusive)
-  end: Date; // End of exception (exclusive)
+  start: string; // ISO date string (e.g., "2026-01-09T16:00:00.000Z")
+  end: string; // ISO date string (e.g., "2026-01-09T17:00:00.000Z")
   seats: number; // 0 means unavailable
 };
 

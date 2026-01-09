@@ -1,7 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput } from 'react-native';
-import { useFormContext, useWatch } from 'react-hook-form';
-import { EditListingForm, AvailabilityPlan, AvailabilityPlanEntry } from '../../types/editListingForm.type';
+import { AvailabilityPlan, AvailabilityPlanEntry } from '../../types/editListingForm.type';
 import { SimpleSelect } from '@components/index';
 
 // Generate time options from 12:00 AM to 11:00 PM
@@ -37,17 +36,18 @@ interface TimeSlotEntryProps {
   dayOfWeek: string;
   entryIndex: number;
   entry: AvailabilityPlanEntry;
+  localPlan: AvailabilityPlan;
+  setLocalPlan: (plan: AvailabilityPlan) => void;
 }
 
-export const TimeSlotEntry: React.FC<TimeSlotEntryProps> = ({ dayOfWeek, entryIndex, entry }) => {
-  const { control, setValue } = useFormContext<EditListingForm>();
-
-  const availabilityPlan = useWatch<EditListingForm>({
-    control,
-    name: 'availabilityPlan',
-  }) as AvailabilityPlan | undefined;
-
-  const entries = availabilityPlan?.entries || [];
+export const TimeSlotEntry: React.FC<TimeSlotEntryProps> = ({ 
+  dayOfWeek, 
+  entryIndex, 
+  entry,
+  localPlan,
+  setLocalPlan,
+}) => {
+  const entries = localPlan.entries || [];
 
   const handleUpdateEntry = (field: keyof AvailabilityPlanEntry, value: string | number) => {
     const newEntries = [...entries];
@@ -64,16 +64,16 @@ export const TimeSlotEntry: React.FC<TimeSlotEntryProps> = ({ dayOfWeek, entryIn
       }
     }
     
-    setValue('availabilityPlan', {
-      ...availabilityPlan!,
+    setLocalPlan({
+      ...localPlan,
       entries: newEntries,
     });
   };
 
   const handleDelete = () => {
     const newEntries = entries.filter((_, index) => index !== entryIndex);
-    setValue('availabilityPlan', {
-      ...availabilityPlan!,
+    setLocalPlan({
+      ...localPlan,
       entries: newEntries,
     });
   };

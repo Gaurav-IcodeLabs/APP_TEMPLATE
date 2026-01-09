@@ -1,24 +1,24 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { useFormContext, useWatch } from 'react-hook-form';
-import { EditListingForm, AvailabilityPlan, AvailabilityPlanEntry } from '../../types/editListingForm.type';
+import { AvailabilityPlan, AvailabilityPlanEntry } from '../../types/editListingForm.type';
 import { TimeSlotEntry } from './index';
 
 interface DayScheduleEntryProps {
   dayOfWeek: string;
   dayLabel: string;
+  localPlan: AvailabilityPlan;
+  setLocalPlan: (plan: AvailabilityPlan) => void;
 }
 
-export const DayScheduleEntry: React.FC<DayScheduleEntryProps> = ({ dayOfWeek, dayLabel }) => {
-  const { control, setValue } = useFormContext<EditListingForm>();
+export const DayScheduleEntry: React.FC<DayScheduleEntryProps> = ({ 
+  dayOfWeek, 
+  dayLabel,
+  localPlan,
+  setLocalPlan,
+}) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
-  const availabilityPlan = useWatch<EditListingForm>({
-    control,
-    name: 'availabilityPlan',
-  }) as AvailabilityPlan | undefined;
-
-  const entries = availabilityPlan?.entries || [];
+  const entries = localPlan.entries || [];
   const dayEntries = entries.filter((e: AvailabilityPlanEntry) => e.dayOfWeek === dayOfWeek);
   const hasEntries = dayEntries.length > 0;
 
@@ -33,8 +33,8 @@ export const DayScheduleEntry: React.FC<DayScheduleEntryProps> = ({ dayOfWeek, d
     if (hasEntries) {
       // Remove all entries for this day
       const newEntries = entries.filter((e: AvailabilityPlanEntry) => e.dayOfWeek !== dayOfWeek);
-      setValue('availabilityPlan', {
-        ...availabilityPlan!,
+      setLocalPlan({
+        ...localPlan,
         entries: newEntries,
       });
       setIsExpanded(false);
@@ -46,8 +46,8 @@ export const DayScheduleEntry: React.FC<DayScheduleEntryProps> = ({ dayOfWeek, d
         endTime: '',
         seats: 1,
       };
-      setValue('availabilityPlan', {
-        ...availabilityPlan!,
+      setLocalPlan({
+        ...localPlan,
         entries: [...entries, newEntry],
       });
       setIsExpanded(true);
@@ -61,8 +61,8 @@ export const DayScheduleEntry: React.FC<DayScheduleEntryProps> = ({ dayOfWeek, d
       endTime: '',
       seats: 1,
     };
-    setValue('availabilityPlan', {
-      ...availabilityPlan!,
+    setLocalPlan({
+      ...localPlan,
       entries: [...entries, newEntry],
     });
   };
@@ -99,6 +99,8 @@ export const DayScheduleEntry: React.FC<DayScheduleEntryProps> = ({ dayOfWeek, d
                 dayOfWeek={dayOfWeek}
                 entryIndex={entryIndex}
                 entry={entry}
+                localPlan={localPlan}
+                setLocalPlan={setLocalPlan}
               />
             );
           })}
