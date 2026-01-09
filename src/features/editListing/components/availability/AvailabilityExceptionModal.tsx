@@ -1,40 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Modal, ScrollView, TextInput, Platform, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Modal, ScrollView, TextInput, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Calendar } from 'react-native-calendars';
 import { CommonSelect } from '@components/index';
 import { AvailabilityException } from '../../types/editListingForm.type';
+import { CalendarPickerModal } from './CalendarPickerModal';
+import { generateTimeOptions, getTimeOptionsAfter } from '../../utils/timeUtils';
+import { formatDateDisplay, getTodayDateString, isSameDate } from '../../utils/dateHelpers';
+import { showErrorAlert } from '../../utils/alertHelpers';
+
+const TIME_OPTIONS = generateTimeOptions(false);
 
 interface AvailabilityExceptionModalProps {
   visible: boolean;
   onClose: () => void;
   onSave: (exception: AvailabilityException) => void;
 }
-
-// Generate time options (same as TimeSlotEntry)
-const generateTimeOptions = () => {
-  const times: { label: string; value: string }[] = [];
-  for (let hour = 0; hour < 24; hour++) {
-    const hourStr = hour.toString().padStart(2, '0');
-    const value = `${hourStr}:00`;
-    const label = formatTimeDisplay(value);
-    times.push({ label, value });
-  }
-  return times;
-};
-
-const formatTimeDisplay = (time: string): string => {
-  if (!time) return '';
-  const [hourStr] = time.split(':');
-  const hour = parseInt(hourStr, 10);
-  
-  if (hour === 0) return '12:00 AM';
-  if (hour === 12) return '12:00 PM';
-  if (hour < 12) return `${hour}:00 AM`;
-  return `${hour - 12}:00 PM`;
-};
-
-const TIME_OPTIONS = generateTimeOptions();
 
 export const AvailabilityExceptionModal: React.FC<AvailabilityExceptionModalProps> = ({
   visible,
@@ -63,17 +43,12 @@ export const AvailabilityExceptionModal: React.FC<AvailabilityExceptionModalProp
   // Filter end time options based on start time when dates are the same
   const getEndTimeOptions = () => {
     // If dates are different, show all times
-    if (!startDate || !endDate || startDate !== endDate) {
+    if (!startDate || !endDate || !isSameDate(startDate, endDate)) {
       return TIME_OPTIONS;
     }
     
     // If dates are the same, only show times after start time
-    if (!startTime) {
-      return TIME_OPTIONS;
-    }
-    
-    const startIndex = TIME_OPTIONS.findIndex(opt => opt.value === startTime);
-    return TIME_OPTIONS.slice(startIndex + 1);
+    return getTimeOptionsAfter(startTime, TIME_OPTIONS);
   };
 
   const endTimeOptions = getEndTimeOptions();
@@ -83,7 +58,7 @@ export const AvailabilityExceptionModal: React.FC<AvailabilityExceptionModalProp
     setStartTime(newStartTime);
     
     // If dates are the same and end time is now invalid, clear it
-    if (startDate && endDate && startDate === endDate) {
+    if (startDate && endDate && isSameDate(startDate, endDate)) {
       if (endTime && endTime <= newStartTime) {
         setEndTime('');
       }
@@ -100,7 +75,7 @@ export const AvailabilityExceptionModal: React.FC<AvailabilityExceptionModalProp
     }
     
     // If dates become the same, validate end time
-    if (endDate && dateString === endDate && endTime && endTime <= startTime) {
+    if (endDate && isSameDate(dateString, endDate) && endTime && endTime <= startTime) {
       setEndTime('');
     }
   };
@@ -109,14 +84,14 @@ export const AvailabilityExceptionModal: React.FC<AvailabilityExceptionModalProp
     setEndDate(dateString);
     
     // If dates become the same, validate end time
-    if (startDate && dateString === startDate && endTime && endTime <= startTime) {
+    if (startDate && isSameDate(dateString, startDate) && endTime && endTime <= startTime) {
       setEndTime('');
     }
   };
 
   const handleSave = () => {
     if (!startDate || !endDate) {
-      Alert.alert('Validation Error', 'Please select both start and end dates');
+      showErrorAlert('Validation Error', 'Please select both start and end dates');
       return;
     }
 
@@ -125,7 +100,7 @@ export const AvailabilityExceptionModal: React.FC<AvailabilityExceptionModalProp
     const endDateTime = new Date(`${endDate}T${endTime}:00`);
 
     if (endDateTime <= startDateTime) {
-      Alert.alert('Validation Error', 'End date/time must be after start date/time');
+      showErrorAlert('Validation Error', 'End date/time must be after start date/time');
       return;
     }
 
@@ -139,182 +114,118 @@ export const AvailabilityExceptionModal: React.FC<AvailabilityExceptionModalProp
     onClose();
   };
 
-  const formatDateDisplay = (dateString: string) => {
-    if (!dateString) return 'Select date';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      weekday: 'short',
-      month: 'short',
-      day: 'numeric',
-    });
-  };
-
   return (
-    <Modal
-      visible={visible}
-      animationType="slide"
-      presentationStyle={Platform.OS === 'ios' ? 'pageSheet' : 'fullScreen'}
-      onRequestClose={onClose}
-    >
-      <SafeAreaView style={styles.modalSafeArea} edges={['top']}>
-        <View style={styles.modalHeader}>
-          <Text style={styles.modalTitle}>Add an availability exception</Text>
-          <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-            <Text style={styles.closeButtonText}>✕</Text>
-          </TouchableOpacity>
-        </View>
-
-        <ScrollView 
-          style={styles.modalContent}
-          contentContainerStyle={styles.modalContentContainer}
-        >
-          {/* Start Date and Time */}
-          <View style={styles.section}>
-            <Text style={styles.label}>Starts</Text>
-            <View style={styles.dateTimeRow}>
-              <TouchableOpacity 
-                style={styles.dateButton}
-                onPress={() => setShowStartCalendar(true)}
-              >
-                <Text style={styles.dateButtonText}>
-                  📅 {formatDateDisplay(startDate)}
-                </Text>
-              </TouchableOpacity>
-              
-              <View style={styles.timeSelect}>
-                <CommonSelect
-                  value={startTime}
-                  onChange={handleStartTimeChange}
-                  options={TIME_OPTIONS}
-                  placeholder="Time"
-                />
-              </View>
-            </View>
+    <>
+      <Modal
+        visible={visible}
+        animationType="slide"
+        presentationStyle={Platform.OS === 'ios' ? 'pageSheet' : 'fullScreen'}
+        onRequestClose={onClose}
+      >
+        <SafeAreaView style={styles.modalSafeArea} edges={['top']}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>Add an availability exception</Text>
+            <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+              <Text style={styles.closeButtonText}>✕</Text>
+            </TouchableOpacity>
           </View>
 
-          {/* End Date and Time */}
-          <View style={styles.section}>
-            <Text style={styles.label}>Ends</Text>
-            <View style={styles.dateTimeRow}>
-              <TouchableOpacity 
-                style={[styles.dateButton, !startDate && styles.disabledButton]}
-                onPress={() => startDate && setShowEndCalendar(true)}
-                disabled={!startDate}
-              >
-                <Text style={[styles.dateButtonText, !startDate && styles.disabledText]}>
-                  📅 {formatDateDisplay(endDate)}
-                </Text>
-              </TouchableOpacity>
-              
-              <View style={[styles.timeSelect, !startDate && styles.disabledSelect]}>
-                <CommonSelect
-                  value={endTime}
-                  onChange={setEndTime}
-                  options={endTimeOptions}
-                  placeholder="Time"
+          <ScrollView 
+            style={styles.modalContent}
+            contentContainerStyle={styles.modalContentContainer}
+          >
+            {/* Start Date and Time */}
+            <View style={styles.section}>
+              <Text style={styles.label}>Starts</Text>
+              <View style={styles.dateTimeRow}>
+                <TouchableOpacity 
+                  style={styles.dateButton}
+                  onPress={() => setShowStartCalendar(true)}
+                >
+                  <Text style={styles.dateButtonText}>
+                    📅 {formatDateDisplay(startDate)}
+                  </Text>
+                </TouchableOpacity>
+                
+                <View style={styles.timeSelect}>
+                  <CommonSelect
+                    value={startTime}
+                    onChange={handleStartTimeChange}
+                    options={TIME_OPTIONS}
+                    placeholder="Time"
+                  />
+                </View>
+              </View>
+            </View>
+
+            {/* End Date and Time */}
+            <View style={styles.section}>
+              <Text style={styles.label}>Ends</Text>
+              <View style={styles.dateTimeRow}>
+                <TouchableOpacity 
+                  style={[styles.dateButton, !startDate && styles.disabledButton]}
+                  onPress={() => startDate && setShowEndCalendar(true)}
                   disabled={!startDate}
-                />
+                >
+                  <Text style={[styles.dateButtonText, !startDate && styles.disabledText]}>
+                    📅 {formatDateDisplay(endDate)}
+                  </Text>
+                </TouchableOpacity>
+                
+                <View style={[styles.timeSelect, !startDate && styles.disabledSelect]}>
+                  <CommonSelect
+                    value={endTime}
+                    onChange={setEndTime}
+                    options={endTimeOptions}
+                    placeholder="Time"
+                    disabled={!startDate}
+                  />
+                </View>
               </View>
             </View>
-          </View>
 
-          {/* Seats */}
-          <View style={styles.section}>
-            <Text style={styles.label}>Seats</Text>
-            <TextInput
-              style={styles.seatsInput}
-              value={seats}
-              onChangeText={setSeats}
-              keyboardType="numeric"
-              placeholder="0"
-              placeholderTextColor="#999"
-            />
-          </View>
-        </ScrollView>
-
-        <View style={styles.footer}>
-          <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-            <Text style={styles.saveButtonText}>Save exception</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Start Date Calendar Modal */}
-        <Modal
-          visible={showStartCalendar}
-          animationType="slide"
-          transparent={true}
-          onRequestClose={() => setShowStartCalendar(false)}
-        >
-          <View style={styles.calendarOverlay}>
-            <View style={styles.calendarContainer}>
-              <View style={styles.calendarHeader}>
-                <Text style={styles.calendarTitle}>Select Start Date</Text>
-                <TouchableOpacity onPress={() => setShowStartCalendar(false)}>
-                  <Text style={styles.calendarClose}>Done</Text>
-                </TouchableOpacity>
-              </View>
-              <Calendar
-                onDayPress={(day) => {
-                  handleStartDateChange(day.dateString);
-                  setShowStartCalendar(false);
-                }}
-                markedDates={{
-                  [startDate]: {
-                    selected: true,
-                    selectedColor: '#4A90E2',
-                  },
-                }}
-                minDate={new Date().toISOString().split('T')[0]}
-                theme={{
-                  todayTextColor: '#4A90E2',
-                  selectedDayBackgroundColor: '#4A90E2',
-                  selectedDayTextColor: '#ffffff',
-                  arrowColor: '#4A90E2',
-                }}
+            {/* Seats */}
+            <View style={styles.section}>
+              <Text style={styles.label}>Seats</Text>
+              <TextInput
+                style={styles.seatsInput}
+                value={seats}
+                onChangeText={setSeats}
+                keyboardType="numeric"
+                placeholder="0"
+                placeholderTextColor="#999"
               />
             </View>
-          </View>
-        </Modal>
+          </ScrollView>
 
-        {/* End Date Calendar Modal */}
-        <Modal
-          visible={showEndCalendar}
-          animationType="slide"
-          transparent={true}
-          onRequestClose={() => setShowEndCalendar(false)}
-        >
-          <View style={styles.calendarOverlay}>
-            <View style={styles.calendarContainer}>
-              <View style={styles.calendarHeader}>
-                <Text style={styles.calendarTitle}>Select End Date</Text>
-                <TouchableOpacity onPress={() => setShowEndCalendar(false)}>
-                  <Text style={styles.calendarClose}>Done</Text>
-                </TouchableOpacity>
-              </View>
-              <Calendar
-                onDayPress={(day) => {
-                  handleEndDateChange(day.dateString);
-                  setShowEndCalendar(false);
-                }}
-                markedDates={{
-                  [endDate]: {
-                    selected: true,
-                    selectedColor: '#4A90E2',
-                  },
-                }}
-                minDate={startDate || new Date().toISOString().split('T')[0]}
-                theme={{
-                  todayTextColor: '#4A90E2',
-                  selectedDayBackgroundColor: '#4A90E2',
-                  selectedDayTextColor: '#ffffff',
-                  arrowColor: '#4A90E2',
-                }}
-              />
-            </View>
+          <View style={styles.footer}>
+            <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
+              <Text style={styles.saveButtonText}>Save exception</Text>
+            </TouchableOpacity>
           </View>
-        </Modal>
-      </SafeAreaView>
-    </Modal>
+          {/* Reusable Calendar Modals */}
+          <CalendarPickerModal
+            visible={showStartCalendar}
+            onClose={() => setShowStartCalendar(false)}
+            onSelectDate={handleStartDateChange}
+            selectedDate={startDate}
+            minDate={getTodayDateString()}
+            title="Select Start Date"
+          />
+
+          <CalendarPickerModal
+            visible={showEndCalendar}
+            onClose={() => setShowEndCalendar(false)}
+            onSelectDate={handleEndDateChange}
+            selectedDate={endDate}
+            minDate={startDate || getTodayDateString()}
+            title="Select End Date"
+          />
+        </SafeAreaView>
+      </Modal>
+
+      
+    </>
   );
 };
 
@@ -421,34 +332,5 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
-  },
-  calendarOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
-  },
-  calendarContainer: {
-    backgroundColor: '#fff',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    paddingBottom: 20,
-  },
-  calendarHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
-  },
-  calendarTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#333',
-  },
-  calendarClose: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#4A90E2',
   },
 });

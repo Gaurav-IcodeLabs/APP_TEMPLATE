@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useFormContext, useWatch } from 'react-hook-form';
 import { EditListingForm, AvailabilityException } from '../types/editListingForm.type';
 import { useIsShowAvailability } from '../hooks/useIsShowAvailability';
 import { AvailabilityModal, AvailabilityExceptionModal } from './availability';
+import { showDeleteConfirmAlert } from '../utils/alertHelpers';
+import { formatExceptionDate } from '../utils/dateHelpers';
 
 const WEEKDAYS = [
   { key: 'mon', label: 'Monday' },
@@ -58,38 +60,20 @@ const EditListingAvailability: React.FC = () => {
   };
 
   const handleDeleteException = (index: number) => {
-    Alert.alert(
+    showDeleteConfirmAlert(
       'Delete Exception',
       'Are you sure you want to delete this exception?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: () => {
-            const currentPlan = control._formValues.availabilityPlan;
-            const currentExceptions = currentPlan?.exceptions || [];
-            const newExceptions = currentExceptions.filter((_: AvailabilityException, i: number) => i !== index);
-            
-            setValue('availabilityPlan', {
-              ...currentPlan!,
-              exceptions: newExceptions,
-            });
-          },
-        },
-      ]
+      () => {
+        const currentPlan = control._formValues.availabilityPlan;
+        const currentExceptions = currentPlan?.exceptions || [];
+        const newExceptions = currentExceptions.filter((_: AvailabilityException, i: number) => i !== index);
+        
+        setValue('availabilityPlan', {
+          ...currentPlan!,
+          exceptions: newExceptions,
+        });
+      }
     );
-  };
-
-  const formatExceptionDate = (isoString: string) => {
-    const date = new Date(isoString);
-    return date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-      hour: 'numeric',
-      minute: '2-digit',
-    });
   };
 
   return (

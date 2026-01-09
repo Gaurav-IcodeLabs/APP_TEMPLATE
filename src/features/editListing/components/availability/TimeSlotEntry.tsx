@@ -2,35 +2,9 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput } from 'react-native';
 import { AvailabilityPlan, AvailabilityPlanEntry } from '../../types/editListingForm.type';
 import { CommonSelect } from '@components/index';
+import { generateTimeOptions, getTimeOptionsAfter } from '../../utils/timeUtils';
 
-// Generate time options from 12:00 AM to 11:00 PM
-const generateTimeOptions = () => {
-  const times: { label: string; value: string }[] = [];
-  for (let hour = 0; hour < 24; hour++) {
-    const hourStr = hour.toString().padStart(2, '0');
-    const value = `${hourStr}:00`;
-    const label = formatTimeDisplay(value);
-    times.push({ label, value });
-  }
-  times.push({ label: '12:00 AM', value: '24:00' });
-  return times;
-};
-
-// Format time for display (e.g., "09:00" -> "9:00 AM")
-const formatTimeDisplay = (time: string): string => {
-  if (!time) return 'Start';
-  if (time === '24:00') return '12:00 AM';
-  
-  const [hourStr] = time.split(':');
-  const hour = parseInt(hourStr, 10);
-  
-  if (hour === 0) return '12:00 AM';
-  if (hour === 12) return '12:00 PM';
-  if (hour < 12) return `${hour}:00 AM`;
-  return `${hour - 12}:00 PM`;
-};
-
-const TIME_OPTIONS = generateTimeOptions();
+const TIME_OPTIONS = generateTimeOptions(true);
 
 interface TimeSlotEntryProps {
   dayOfWeek: string;
@@ -41,7 +15,6 @@ interface TimeSlotEntryProps {
 }
 
 export const TimeSlotEntry: React.FC<TimeSlotEntryProps> = ({ 
-  dayOfWeek, 
   entryIndex, 
   entry,
   localPlan,
@@ -79,19 +52,7 @@ export const TimeSlotEntry: React.FC<TimeSlotEntryProps> = ({
   };
 
   // Filter end time options based on start time
-  const getEndTimeOptions = () => {
-    if (!entry.startTime) {
-      return []; // No options if start time not selected
-    }
-    
-    // Find the index of start time in TIME_OPTIONS
-    const startIndex = TIME_OPTIONS.findIndex(opt => opt.value === entry.startTime);
-    
-    // Return only times after the start time
-    return TIME_OPTIONS.slice(startIndex + 1);
-  };
-
-  const endTimeOptions = getEndTimeOptions();
+  const endTimeOptions = getTimeOptionsAfter(entry.startTime, TIME_OPTIONS);
 
   return (
     <View style={styles.container}>
@@ -142,7 +103,6 @@ export const TimeSlotEntry: React.FC<TimeSlotEntryProps> = ({
     </View>
   );
 };
-
 
 const styles = StyleSheet.create({
   container: {
@@ -203,4 +163,3 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
 });
-
