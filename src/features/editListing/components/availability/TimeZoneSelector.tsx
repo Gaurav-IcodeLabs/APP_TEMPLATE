@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { SimpleSelect } from '@components/index';
+import { CommonSelect } from '@components/index';
 
 // Common timezones - you can expand this list
 const TIMEZONES = [
@@ -67,7 +67,7 @@ export const TimeZoneSelector: React.FC<TimeZoneSelectorProps> = ({ value, onCha
   return (
     <View style={styles.container}>
       <Text style={styles.label}>Select a time zone</Text>
-      <SimpleSelect
+      <CommonSelect
         value={value}
         onChange={onChange}
         options={options}

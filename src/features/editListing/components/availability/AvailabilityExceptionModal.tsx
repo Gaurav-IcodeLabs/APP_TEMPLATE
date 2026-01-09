@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Modal, ScrollView, TextInput, Platform, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Calendar } from 'react-native-calendars';
-import { SimpleSelect } from '@components/index';
+import { CommonSelect } from '@components/index';
 import { AvailabilityException } from '../../types/editListingForm.type';
 
 interface AvailabilityExceptionModalProps {
@@ -182,7 +182,7 @@ export const AvailabilityExceptionModal: React.FC<AvailabilityExceptionModalProp
               </TouchableOpacity>
               
               <View style={styles.timeSelect}>
-                <SimpleSelect
+                <CommonSelect
                   value={startTime}
                   onChange={handleStartTimeChange}
                   options={TIME_OPTIONS}
@@ -207,7 +207,7 @@ export const AvailabilityExceptionModal: React.FC<AvailabilityExceptionModalProp
               </TouchableOpacity>
               
               <View style={[styles.timeSelect, !startDate && styles.disabledSelect]}>
-                <SimpleSelect
+                <CommonSelect
                   value={endTime}
                   onChange={setEndTime}
                   options={endTimeOptions}

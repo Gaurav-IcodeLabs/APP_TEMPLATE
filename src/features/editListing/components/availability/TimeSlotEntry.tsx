@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput } from 'react-native';
 import { AvailabilityPlan, AvailabilityPlanEntry } from '../../types/editListingForm.type';
-import { SimpleSelect } from '@components/index';
+import { CommonSelect } from '@components/index';
 
 // Generate time options from 12:00 AM to 11:00 PM
 const generateTimeOptions = () => {
@@ -12,14 +12,14 @@ const generateTimeOptions = () => {
     const label = formatTimeDisplay(value);
     times.push({ label, value });
   }
-  times.push({ label: '12:00 AM (+1 day)', value: '24:00' });
+  times.push({ label: '12:00 AM', value: '24:00' });
   return times;
 };
 
 // Format time for display (e.g., "09:00" -> "9:00 AM")
 const formatTimeDisplay = (time: string): string => {
   if (!time) return 'Start';
-  if (time === '24:00') return '12:00 AM (+1 day)';
+  if (time === '24:00') return '12:00 AM';
   
   const [hourStr] = time.split(':');
   const hour = parseInt(hourStr, 10);
@@ -97,7 +97,7 @@ export const TimeSlotEntry: React.FC<TimeSlotEntryProps> = ({
     <View style={styles.container}>
       <View style={styles.timeRow}>
         <View style={styles.selectWrapper}>
-          <SimpleSelect
+          <CommonSelect
             value={entry.startTime}
             onChange={(value: string) => handleUpdateEntry('startTime', value)}
             options={TIME_OPTIONS.slice(0, -1)}
@@ -108,7 +108,7 @@ export const TimeSlotEntry: React.FC<TimeSlotEntryProps> = ({
         <Text style={styles.dash}>–</Text>
 
         <View style={styles.selectWrapper}>
-          <SimpleSelect
+          <CommonSelect
             value={entry.endTime}
             onChange={(value: string) => handleUpdateEntry('endTime', value)}
             options={endTimeOptions}

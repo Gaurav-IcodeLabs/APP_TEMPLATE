@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Modal, ScrollView } from 'react-native';
 
-interface SimpleSelectProps {
+interface CommonSelectProps {
   value: string;
   onChange: (value: string) => void;
   options: { label: string; value: string }[];
@@ -10,7 +10,7 @@ interface SimpleSelectProps {
   disabled?: boolean;
 }
 
-export const SimpleSelect: React.FC<SimpleSelectProps> = ({
+export const CommonSelect: React.FC<CommonSelectProps> = ({
   value,
   onChange,
   options,
