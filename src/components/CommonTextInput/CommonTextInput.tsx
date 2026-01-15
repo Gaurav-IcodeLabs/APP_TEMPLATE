@@ -3,6 +3,7 @@ import {
   Image,
   ImageSourcePropType,
   ImageStyle,
+  StyleProp,
   StyleSheet,
   Text,
   TextInput,
@@ -22,7 +23,7 @@ interface TextInputFieldProps extends TextInputProps {
   labelKey?: string;
   labelValue?: string;
   isPassword?: boolean;
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
   rightIcon?: ImageSourcePropType;
   rightIconStyle?: ImageStyle;
   onRightLabelPress?: () => void;
@@ -89,13 +90,13 @@ export const CommonTextInput = ({
               styles.inputContainer,
               inputContainerStyles,
               //   isFocused && { borderColor: colors.marketplaceColor },
-              //   multiline && {
-              //     height: undefined,
-              //     minHeight: (150),
-              //     maxHeight: (250),
-              //     alignItems: 'flex-start',
-              //     paddingVertical: (10),
-              //   },
+                textInputProps.multiline && {
+                  height: undefined,
+                  minHeight: (150),
+                  maxHeight: (250),
+                  alignItems: 'flex-start',
+                  paddingVertical: (10),
+                },
             ]}
           >
             {rightIcon && (

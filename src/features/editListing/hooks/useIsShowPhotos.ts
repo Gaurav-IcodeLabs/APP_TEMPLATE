@@ -2,7 +2,7 @@ import { useConfiguration } from '@context/configurationContext';
 import { useFormContext, useWatch } from 'react-hook-form';
 import { EditListingForm } from '../types/editListingForm.type';
 
-export const useIsPriceVariationsEnabled = () => {
+export const useIsShowPhotos = () => {
   const config = useConfiguration();
   const { control } = useFormContext<EditListingForm>();
   const listingType = useWatch<EditListingForm>({
@@ -16,6 +16,6 @@ export const useIsPriceVariationsEnabled = () => {
     type => type.listingType === listingType,
   );
 
-  // Check if price variations are enabled in the listing type config
-  return listingTypeConfig?.priceVariations?.enabled === true;
+  // Show pricing if listing type has pricing enabled
+  return listingTypeConfig?.defaultListingFields?.images !== false;
 };

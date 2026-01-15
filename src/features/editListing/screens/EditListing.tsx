@@ -1,5 +1,5 @@
 import { Listing } from '@appTypes/index';
-import { useTypedSelector } from '@redux/store';
+import { useAppDispatch, useTypedSelector } from '@redux/store';
 import { FormProvider, useForm } from 'react-hook-form';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import EditListingCustomFields from '../components/EditListingCustomFields';
@@ -13,8 +13,26 @@ import EditListingLocation from '../components/EditListingLocation';
 import EditListingPricing from '../components/EditListingPricing';
 import EditListingPricingAndStock from '../components/EditListingPricingAndStock';
 import EditListingPriceVariations from '../components/EditListingPriceVariations';
+import EditListingAvailability from '../components/EditListingAvailability';
+import EditListingDelivery from '../components/EditListingDelivery';
+import EditListingPhotos from '../components/EditListingPhotos';
+import { Button } from '@components/index';
+import {
+  createListing,
+  selectCreateListingInProgress,
+} from '../editListing.slice';
+import { transformFormToListingData } from '../utils/transformFormToListingData';
+import { Alert } from 'react-native';
+import { useConfiguration } from '@context/configurationContext';
 
 const EditListing = () => {
+  const dispatch = useAppDispatch();
+  const config = useConfiguration();
+  const marketplaceCurrency = config?.currency;
+  const categoryKey = config?.categoryConfiguration.key;
+  const listingCategories = config?.categoryConfiguration.categories;
+  const listingFields = config?.listing.listingFields;
+  if (!marketplaceCurrency || !categoryKey || !listingFields) return;
   const { listingId, wizardKey } = useEditListingWizardRoute().params;
 
   const isNewListing = !listingId;
@@ -25,16 +43,172 @@ const EditListing = () => {
       : undefined,
   );
 
+  const createListingInProgress = useTypedSelector(state =>
+    selectCreateListingInProgress(state, wizardKey),
+  );
+
   const formMethods = useForm<EditListingForm>({
     defaultValues: {
-      type: existingListingType ?? undefined,
+      listingType: existingListingType ?? undefined,
       location: {
         origin: [],
         address: '',
       },
+      images: [],
       fields: {},
     },
   });
+
+  // const handlePublishListing = async () => {
+  //   const formData = formMethods.getValues();
+  //   const { fields, ...rest } = formData;
+  //   console.log('Form data:', JSON.stringify(formData, null, 2));
+
+  //   // Basic validation
+  //   if (!formData.listingType) {
+  //     Alert.alert('Error', 'Please select a listing type');
+  //     return;
+  //   }
+
+  //   if (!formData.title) {
+  //     Alert.alert('Error', 'Please enter a listing title');
+  //     return;
+  //   }
+
+  //   try {
+  //     const listingData = transformFormToListingData(
+  //       formData,
+  //       marketplaceCurrency,
+  //     );
+
+  //     // // Log the data being sent for debugging
+  //     // console.log(
+  //     //   'Transformed listing data:',
+  //     //   JSON.stringify(listingData, null, 2),
+  //     // );
+
+  //     const nestedCategories = pickCategoryFields(
+  //       rest,
+  //       categoryKey,
+  //       1,
+  //       listingCategories,
+  //     );
+  //     console.log('nestedCategories', nestedCategories);
+  //     // Remove old categories by explicitly saving null for them.
+  //     const cleanedNestedCategories = {
+  //       ...[1, 2, 3].reduce(
+  //         (a, i) => ({ ...a, [`${categoryKey}${i}`]: null }),
+  //         {},
+  //       ),
+  //       ...nestedCategories,
+  //     };
+  //     const publicListingFields = pickListingFieldsData(
+  //       rest,
+  //       'public',
+  //       formData.listingType,
+  //       nestedCategories,
+  //       listingFields,
+  //     );
+  //     const privateListingFields = pickListingFieldsData(
+  //       rest,
+  //       'private',
+  //       formData.listingType,
+  //       nestedCategories,
+  //       listingFields,
+  //     );
+
+  //     // Build the params object, only including defined values
+  //     const params: any = {
+  //       wizardKey,
+  //       title: listingData.title,
+  //     };
+
+  //     if (listingData.description) {
+  //       params.description = listingData.description;
+  //     }
+
+  //     if (listingData.price) {
+  //       params.price = listingData.price;
+  //     }
+
+  //     if (
+  //       listingData.publicData &&
+  //       Object.keys(listingData.publicData).length > 0
+  //     ) {
+  //       params.publicData = listingData.publicData;
+  //     }
+
+  //     if (listingData.geolocation) {
+  //       params.geolocation = listingData.geolocation;
+  //     }
+
+  //     if (listingData.availabilityPlan) {
+  //       params.availabilityPlan = listingData.availabilityPlan;
+  //     }
+
+  //     if (listingData.images && listingData.images.length > 0) {
+  //       params.images = listingData.images;
+  //     }
+
+  //     const result = await dispatch(createListing(params)).unwrap();
+
+  //     Alert.alert('Success', 'Listing created successfully!');
+  //     console.log('Created listing:', result);
+  //   } catch (error: any) {
+  //     console.error('Error creating listing:', error);
+  //     console.error('API Errors:', JSON.stringify(error?.apiErrors, null, 2));
+  //     console.error('Full error:', JSON.stringify(error, null, 2));
+
+  //     // Extract meaningful error message from API errors
+  //     let errorMessage = 'Failed to create listing. Please try again.';
+  //     if (error?.apiErrors && error.apiErrors.length > 0) {
+  //       const apiError = error.apiErrors[0];
+  //       errorMessage = apiError.title || apiError.detail || errorMessage;
+  //     }
+
+  //     Alert.alert('Error', errorMessage);
+  //   }
+  // };
+
+  const handlePublishListing = async () => {
+    const formData = formMethods.getValues();
+
+    if (!formData.listingType || !formData.title) {
+      Alert.alert('Error', 'Listing type and title are required');
+      return;
+    }
+
+    try {
+      const listingPayload = transformFormToListingData(
+        formData,
+        marketplaceCurrency,
+        formData.listingType,
+        categoryKey,
+        listingCategories,
+        listingFields,
+      );
+      console.log('listingPayload', JSON.stringify(listingPayload));
+      return;
+
+      const params = {
+        wizardKey,
+        ...listingPayload,
+      };
+
+      const result = await dispatch(createListing(params)).unwrap();
+
+      Alert.alert('Success', 'Listing created successfully!');
+      console.log('Created listing:', result);
+    } catch (error: any) {
+      console.error('Create listing error', error);
+
+      const apiError = error?.apiErrors?.[0];
+      Alert.alert(
+        'Error',
+        apiError?.title || apiError?.detail || 'Failed to create listing',
+      );
+    }
+  };
 
   return (
     <FormProvider {...formMethods}>
@@ -61,7 +235,23 @@ const EditListing = () => {
 
           <EditListingPriceVariations />
 
+          <EditListingAvailability />
+
           <EditListingPricingAndStock />
+
+          <EditListingDelivery />
+
+          <EditListingPhotos />
+
+          {isNewListing && (
+            <Button
+              title="Publish listing"
+              onPress={handlePublishListing}
+              loader={createListingInProgress}
+              disabled={createListingInProgress}
+              style={styles.publishButton}
+            />
+          )}
         </View>
       </ScrollView>
     </FormProvider>
@@ -75,6 +265,7 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: 16,
+    paddingBottom: 50,
   },
   title: {
     fontSize: 24,
@@ -86,6 +277,10 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#666',
     marginBottom: 24,
+  },
+  publishButton: {
+    marginTop: 32,
+    marginBottom: 16,
   },
 });
 
