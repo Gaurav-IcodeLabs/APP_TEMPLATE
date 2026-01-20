@@ -7,7 +7,7 @@ import EditListingDescription from '../components/EditListingDescription';
 import EditListingTitle from '../components/EditListingTitle';
 import SelectListingCategory from '../components/SelectListingCategory';
 import SelectListingType from '../components/SelectListingType';
-import { useEditListingWizardRoute } from '../editListing.helper';
+import { transformFormToListingData, useEditListingWizardRoute } from '../editListing.helper';
 import { EditListingForm } from '../types/editListingForm.type';
 import EditListingLocation from '../components/EditListingLocation';
 import EditListingPricing from '../components/EditListingPricing';
@@ -21,7 +21,6 @@ import {
   createListing,
   selectCreateListingInProgress,
 } from '../editListing.slice';
-import { transformFormToListingData } from '../utils/transformFormToListingData';
 import { Alert } from 'react-native';
 import { useConfiguration } from '@context/configurationContext';
 
