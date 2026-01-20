@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useFormContext, useWatch } from 'react-hook-form';
 import { EditListingForm, AvailabilityException } from '../types/editListingForm.type';
 import { useIsShowAvailability } from '../hooks/useIsShowAvailability';
-import { AvailabilityModal, AvailabilityExceptionModal } from './availability';
+import { AvailabilityModal, AvailabilityExceptionModal, AvailabilityModalImperativeHandle } from './availability';
 import { showDeleteConfirmAlert } from '../utils/alertHelpers';
 import { formatExceptionDate } from '../utils/dateHelpers';
 
@@ -27,7 +27,7 @@ const EditListingAvailability: React.FC = () => {
   const { control, setValue, getValues } = useFormContext<EditListingForm>();
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [isExceptionModalVisible, setIsExceptionModalVisible] = useState(false);
-
+  const availabilityModalRef = useRef<AvailabilityModalImperativeHandle | null>(null);
   const { isScheduleExists, availabilityTimezone, exceptions } = useWatch({
     control,
     name: 'availabilityPlan',
@@ -47,6 +47,7 @@ const EditListingAvailability: React.FC = () => {
   const handleOpenModal = () => {
     // Don't initialize form values here - let the modal handle it with local state
     setIsModalVisible(true);
+    availabilityModalRef.current?.repopulateForm();
   };
 
   const handleSaveException = (exception: AvailabilityException) => {
@@ -125,6 +126,7 @@ const EditListingAvailability: React.FC = () => {
       )}
 
       <AvailabilityModal
+        ref={availabilityModalRef}
         visible={isModalVisible}
         onClose={() => setIsModalVisible(false)}
         timezone={timezone}

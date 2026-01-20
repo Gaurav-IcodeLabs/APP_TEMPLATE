@@ -1,10 +1,10 @@
-import { EditListingForm, AvailabilityPlan } from "@features/editListing/types/editListingForm.type";
-import { useFormContext, FormProvider, useForm } from "react-hook-form";
+import { AvailabilityPlan, EditListingForm } from "@features/editListing/types/editListingForm.type";
+import { forwardRef, useImperativeHandle } from "react";
+import { FormProvider, useForm, useFormContext } from "react-hook-form";
 import { Modal, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { TimeZoneSelector } from "./TimeZoneSelector";
 import { DayScheduleEntry } from "./DayScheduleEntry";
-import { useEffect } from "react";
+import { TimeZoneSelector } from "./TimeZoneSelector";
 
 /**
  * Modal for editing availability schedule
@@ -20,20 +20,24 @@ type LocalFormData = {
   localPlan: AvailabilityPlan;
 };
 
-export const AvailabilityModal: React.FC<AvailabilityModalProps> = ({
+export type AvailabilityModalImperativeHandle = {
+  repopulateForm: () => void;
+};
+
+export const AvailabilityModal = forwardRef<AvailabilityModalImperativeHandle, AvailabilityModalProps>(({
   visible,
   onClose,
-  timezone,
+  timezone = Intl.DateTimeFormat().resolvedOptions().timeZone,
   weekdays,
-}) => {
+}, ref) => {
   const { setValue, getValues } = useFormContext<EditListingForm>();
-  
+
   // Get default timezone - use provided timezone or fallback to user's timezone
   const getDefaultTimezone = () => {
     if (timezone) return timezone;
     return Intl.DateTimeFormat().resolvedOptions().timeZone;
   };
-  
+
   // Create a local form for the modal
   const localFormMethods = useForm<LocalFormData>({
     defaultValues: {
@@ -46,27 +50,26 @@ export const AvailabilityModal: React.FC<AvailabilityModalProps> = ({
     }
   });
 
-  // Initialize local form when modal opens
-  useEffect(() => {
-    if (visible) {
+  useImperativeHandle(ref, () => ({
+    repopulateForm: () => {
       const currentPlan = getValues('availabilityPlan');
       const defaultTimezone = getDefaultTimezone();
-      
+
       // If there's an existing plan, use it; otherwise create new with default timezone
-      const planToUse = currentPlan && currentPlan.timezone 
-        ? currentPlan 
+      const planToUse = currentPlan && currentPlan.timezone
+        ? currentPlan
         : {
-            type: 'availability-plan/time' as const,
-            timezone: defaultTimezone,
-            entries: currentPlan?.entries || [],
-            exceptions: currentPlan?.exceptions || [],
-          };
-      
+          type: 'availability-plan/time' as const,
+          timezone: defaultTimezone,
+          entries: currentPlan?.entries || [],
+          exceptions: currentPlan?.exceptions || [],
+        };
+
       localFormMethods.reset({
         localPlan: planToUse
       });
     }
-  }, [visible, timezone, getValues, localFormMethods]);
+  }));
 
   const handleSaveSchedule = () => {
     // Save local changes to parent form context
@@ -96,8 +99,8 @@ export const AvailabilityModal: React.FC<AvailabilityModalProps> = ({
             </TouchableOpacity>
           </View>
 
-          <ScrollView 
-            style={styles.modalContent} 
+          <ScrollView
+            style={styles.modalContent}
             contentContainerStyle={styles.modalContentContainer}
             showsVerticalScrollIndicator={true}
           >
@@ -123,7 +126,7 @@ export const AvailabilityModal: React.FC<AvailabilityModalProps> = ({
       </FormProvider>
     </Modal>
   );
-};
+});
 
 const styles = StyleSheet.create({
   modalSafeArea: {
