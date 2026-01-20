@@ -1,3 +1,8 @@
+import { CommonText } from '@components/index';
+import { colors } from '@constants/colors';
+import { primaryFont } from '@constants/typography';
+import { scale } from '@util/responsive';
+import { useFormContext } from 'react-hook-form';
 import {
   Alert,
   Image,
@@ -8,32 +13,19 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import React from 'react';
-import { useFormContext } from 'react-hook-form';
 import ImageCropPicker from 'react-native-image-crop-picker';
 import { useIsShowPhotos } from '../hooks/useIsShowPhotos';
-import { useImageUpload } from '../hooks/useImageUpload';
-import { scale } from '@util/responsive';
-import { CommonText } from '@components/index';
+import { useListingImagesUpload } from '../hooks/useListingImagesUpload';
 import { EditListingForm, ImageItem } from '../types/editListingForm.type';
-import { colors } from '@constants/colors';
-import { primaryFont } from '@constants/typography';
 
 const LIMIT_IN_BYTES = 20 * 1024 * 1024; // 20MB
 
 const EditListingPhotos = () => {
   const isShowPhotos = useIsShowPhotos();
   const { watch, setValue } = useFormContext<EditListingForm>();
-  const { uploadImage, isUploading } = useImageUpload();
+  const { uploadImages, isUploading } = useListingImagesUpload();
 
   const images = watch('images') || [];
-
-  //   const listingTypeConfig = getListingTypeConfig(
-  //     listing,
-  //     selectedListingType,
-  //     config,
-  //   );
-  //    const isPayoutDetailsRequired = requirePayoutDetails(listingTypeConfig);
 
   const pickImages = async () => {
     if (isUploading) return;
@@ -49,33 +41,26 @@ const EditListingPhotos = () => {
 
       const validImages: ImageItem[] = [];
 
-      for (const asset of result) {
-        if (asset.size && asset.size > LIMIT_IN_BYTES) {
-          Alert.alert(
-            'Error',
-            'Image size exceeds 20MB limit. Please choose a smaller image.',
-          );
-          continue;
-        }
-
-        try {
-          const uploadedImage = await uploadImage({
-            uri: asset.path,
-            id: `${asset.path}_${Date.now()}`,
-            type: asset.mime || 'image/jpeg',
-            name: `image_${Math.random()}_${Date.now()}.jpg`,
-          });
-
-          console.log('uploadedImage', uploadedImage);
-
-          if (uploadedImage) {
-            validImages.push(uploadedImage);
-          }
-        } catch (error: unknown) {
-          console.error('Error uploading image:', error);
-          Alert.alert('Error', 'Failed to upload image. Please try again.');
-        }
+      if (result.length && result.some(r => r.size && r.size > LIMIT_IN_BYTES)) {
+        Alert.alert(
+          'Error',
+          'Image size exceeds 20MB limit. Please choose a smaller image.',
+        );
+        return;
       }
+
+      const uploadedImages = await uploadImages(result.map(r => ({
+        uri: r.path,
+        id: `${r.path}_${Date.now()}`,
+        type: r.mime || 'image/jpeg',
+        name: `image_${Math.random()}_${Date.now()}.jpg`,
+      })));
+
+      if (!uploadedImages) {
+        Alert.alert('Error', 'Failed to upload images. Please try again.');
+        return;
+      }
+      validImages.push(...uploadedImages);
 
       if (validImages.length > 0) {
         setValue('images', [...images, ...validImages]);

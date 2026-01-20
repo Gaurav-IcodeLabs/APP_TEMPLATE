@@ -32,6 +32,7 @@ export interface EditListingEntity {
   // Fetch listing
   fetchListingInProgress: boolean;
   fetchListingError: StorableError | null;
+
 }
 
 // Create the entity adapter
@@ -178,9 +179,10 @@ export const fetchOwnListing = createAsyncThunk<
   },
 );
 
-export const requestImageUpload = createAsyncThunk<
-  any,
+export const uploadListingImage = createAsyncThunk<
+  { id: string; uri: string } | StorableError,
   {
+    wizardKey: string;
     file: {
       uri: string;
       id: string;
@@ -191,7 +193,7 @@ export const requestImageUpload = createAsyncThunk<
   },
   Thunk
 >(
-  'editListing/requestImageUploadStatus',
+  'editListing/uploadListingImageStatus',
   async (actionPayload, { extra: sdk }) => {
     try {
       const { listingImageConfig, file } = actionPayload;
@@ -207,7 +209,21 @@ export const requestImageUpload = createAsyncThunk<
         { image: file } as any,
         queryParams as any,
       );
-      return res;
+      if (res?.data?.data?.id) {
+        const imageId =
+          typeof res.data.data.id === 'string'
+            ? res.data.data.id
+            : res.data.data.id.uuid;
+
+        return {
+          id: imageId,
+          uri:
+            res.data.data.attributes.variants?.['listing-card']?.url ||
+            res.data.data.attributes.variants?.default?.url ||
+            file.uri,
+        };
+      }
+      throw new Error('Image upload failed');
     } catch (error) {
       return storableError(error as any);
     }
@@ -442,8 +458,8 @@ const editListingSlice = createSlice({
           });
         }
       });
-  },
-});
+  }
+})
 
 // ================ Actions ================ //
 
