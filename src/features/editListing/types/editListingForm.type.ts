@@ -85,7 +85,5 @@ export type EditListingFormRest = Omit<
   | 'pickupLocation'
   | 'shippingPriceOneItem'
   | 'shippingPriceAdditionalItems'
-  | 'transactionProcessAlias'
-  | 'unitType'
   | 'fields'
 >;

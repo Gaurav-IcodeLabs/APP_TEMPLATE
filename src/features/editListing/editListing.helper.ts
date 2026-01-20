@@ -1,12 +1,13 @@
-import { RouteProp, useRoute } from '@react-navigation/native';
-import { EDIT_LISTING_SCREENS } from './screens.constant';
-import { EditListingWizardParamList } from './types/navigation.types';
-import { createImageVariantConfig, types } from '@util/sdkLoader';
+import { ListingField, ListingFields } from '@appTypes/config';
 import { ListingImageLayout } from '@appTypes/config/configLayoutAndBranding';
-import { isFieldForCategory, isFieldForListingType, pickCategoryFields } from '@util/fieldHelpers';
 import { EXTENDED_DATA_SCHEMA_TYPES } from '@constants/schemaTypes';
-import { CategoryNode, ListingField, ListingFields } from '@appTypes/config';
+import { RouteProp, useRoute } from '@react-navigation/native';
+import { AppConfig } from '@redux/slices/hostedAssets.slice';
+import { isFieldForCategory, isFieldForListingType, pickCategoryFields } from '@util/fieldHelpers';
+import { createImageVariantConfig, types } from '@util/sdkLoader';
+import { EDIT_LISTING_SCREENS } from './screens.constant';
 import { EditListingForm } from './types/editListingForm.type';
+import { EditListingWizardParamList } from './types/navigation.types';
 
 export const useEditListingWizardRoute = () => {
   return useRoute<
@@ -87,11 +88,7 @@ export const pickListingFieldsData = (
 
 export const transformFormToListingData = (
   formData: EditListingForm,
-  marketplaceCurrency: string,
-  listingType: string,
-  categoryKey: string,
-  listingCategories: CategoryNode[] = [],
-  listingFields: ListingFields,
+  config: AppConfig | undefined,
 ) => {
   const {
     title,
@@ -110,13 +107,30 @@ export const transformFormToListingData = (
     ...rest
   } = formData;
 
+  const listingType = formData.listingType;
+  if (!listingType) {
+    throw new Error('Listing type not found');
+  }
+  const categoryKey = config?.categoryConfiguration.key;
+  const listingCategories = config?.categoryConfiguration.categories;
+  const listingFields = config?.listing?.listingFields ?? [];
+  const marketplaceCurrency = config?.currency;
+
   /* ---------------------------
      PUBLIC DATA
   ---------------------------- */
+  const { alias: transactionProcessAlias, unitType } =
+    config?.listing?.listingTypes?.find(
+      type => type.listingType === listingType,
+    )?.transactionType ?? {};
+  if (!transactionProcessAlias || !unitType) {
+    throw new Error('Transaction process alias or unit type not found');
+  }
+
   const publicData: Record<string, any> = {
     listingType,
-    transactionProcessAlias: rest.fields.transactionProcessAlias,
-    unitType: rest.fields.unitType,
+    transactionProcessAlias,
+    unitType,
   };
 
   if (priceVariants?.length) {
@@ -178,7 +192,7 @@ export const transformFormToListingData = (
   ---------------------------- */
   const nestedCategories = pickCategoryFields(
     rest.fields,
-    categoryKey,
+    categoryKey ?? '',
     1,
     listingCategories,
   );

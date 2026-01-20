@@ -27,11 +27,7 @@ import { useConfiguration } from '@context/configurationContext';
 const EditListing = () => {
   const dispatch = useAppDispatch();
   const config = useConfiguration();
-  const marketplaceCurrency = config?.currency;
-  const categoryKey = config?.categoryConfiguration.key;
-  const listingCategories = config?.categoryConfiguration.categories;
-  const listingFields = config?.listing.listingFields;
-  if (!marketplaceCurrency || !categoryKey || !listingFields) return;
+
   const { listingId, wizardKey } = useEditListingWizardRoute().params;
 
   const isNewListing = !listingId;
@@ -58,117 +54,6 @@ const EditListing = () => {
     },
   });
 
-  // const handlePublishListing = async () => {
-  //   const formData = formMethods.getValues();
-  //   const { fields, ...rest } = formData;
-  //   console.log('Form data:', JSON.stringify(formData, null, 2));
-
-  //   // Basic validation
-  //   if (!formData.listingType) {
-  //     Alert.alert('Error', 'Please select a listing type');
-  //     return;
-  //   }
-
-  //   if (!formData.title) {
-  //     Alert.alert('Error', 'Please enter a listing title');
-  //     return;
-  //   }
-
-  //   try {
-  //     const listingData = transformFormToListingData(
-  //       formData,
-  //       marketplaceCurrency,
-  //     );
-
-  //     // // Log the data being sent for debugging
-  //     // console.log(
-  //     //   'Transformed listing data:',
-  //     //   JSON.stringify(listingData, null, 2),
-  //     // );
-
-  //     const nestedCategories = pickCategoryFields(
-  //       rest,
-  //       categoryKey,
-  //       1,
-  //       listingCategories,
-  //     );
-  //     console.log('nestedCategories', nestedCategories);
-  //     // Remove old categories by explicitly saving null for them.
-  //     const cleanedNestedCategories = {
-  //       ...[1, 2, 3].reduce(
-  //         (a, i) => ({ ...a, [`${categoryKey}${i}`]: null }),
-  //         {},
-  //       ),
-  //       ...nestedCategories,
-  //     };
-  //     const publicListingFields = pickListingFieldsData(
-  //       rest,
-  //       'public',
-  //       formData.listingType,
-  //       nestedCategories,
-  //       listingFields,
-  //     );
-  //     const privateListingFields = pickListingFieldsData(
-  //       rest,
-  //       'private',
-  //       formData.listingType,
-  //       nestedCategories,
-  //       listingFields,
-  //     );
-
-  //     // Build the params object, only including defined values
-  //     const params: any = {
-  //       wizardKey,
-  //       title: listingData.title,
-  //     };
-
-  //     if (listingData.description) {
-  //       params.description = listingData.description;
-  //     }
-
-  //     if (listingData.price) {
-  //       params.price = listingData.price;
-  //     }
-
-  //     if (
-  //       listingData.publicData &&
-  //       Object.keys(listingData.publicData).length > 0
-  //     ) {
-  //       params.publicData = listingData.publicData;
-  //     }
-
-  //     if (listingData.geolocation) {
-  //       params.geolocation = listingData.geolocation;
-  //     }
-
-  //     if (listingData.availabilityPlan) {
-  //       params.availabilityPlan = listingData.availabilityPlan;
-  //     }
-
-  //     if (listingData.images && listingData.images.length > 0) {
-  //       params.images = listingData.images;
-  //     }
-
-  //     const result = await dispatch(createListing(params)).unwrap();
-
-  //     Alert.alert('Success', 'Listing created successfully!');
-  //     console.log('Created listing:', result);
-  //   } catch (error: any) {
-  //     console.error('Error creating listing:', error);
-  //     console.error('API Errors:', JSON.stringify(error?.apiErrors, null, 2));
-  //     console.error('Full error:', JSON.stringify(error, null, 2));
-
-  //     // Extract meaningful error message from API errors
-  //     let errorMessage = 'Failed to create listing. Please try again.';
-  //     if (error?.apiErrors && error.apiErrors.length > 0) {
-  //       const apiError = error.apiErrors[0];
-  //       errorMessage = apiError.title || apiError.detail || errorMessage;
-  //     }
-
-  //     Alert.alert('Error', errorMessage);
-  //   }
-  // };
-
   const handlePublishListing = async () => {
     const formData = formMethods.getValues();
 
@@ -180,14 +65,8 @@ const EditListing = () => {
     try {
       const listingPayload = transformFormToListingData(
         formData,
-        marketplaceCurrency,
-        formData.listingType,
-        categoryKey,
-        listingCategories,
-        listingFields,
+        config
       );
-      console.log('listingPayload', JSON.stringify(listingPayload));
-      return;
 
       const params = {
         wizardKey,
