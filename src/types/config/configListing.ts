@@ -2,6 +2,8 @@
 // LISTING TYPES
 // -----------------------------------------------------------------------------
 
+import { Scope } from "@appTypes/common/types";
+
 export interface TransactionType {
   process: string;
   alias: string;
@@ -86,7 +88,7 @@ export interface ListingTypeConfig {
 export interface ListingField {
   label?: string;
   key: string;
-  scope: 'private' | 'protected' | 'public' | 'meta' | 'metadata';
+  scope: Scope;
   schemaType: SchemaType;
 
   enumOptions?: EnumOption[];

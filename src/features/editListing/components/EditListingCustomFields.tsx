@@ -20,7 +20,7 @@ const EditListingCustomFields = () => {
 
   const listingType = useWatch({
     control,
-    name: 'type',
+    name: 'listingType',
   });
 
   const config = useConfiguration();

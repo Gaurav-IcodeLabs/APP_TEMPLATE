@@ -10,8 +10,8 @@ import { EditListingForm } from '../types/editListingForm.type';
 const SelectListingType = () => {
   const { control } = useFormContext<EditListingForm>();
   const config = useConfiguration();
-
   const listingId = useEditListingWizardRoute().params.listingId;
+
 
   // Transform listing types from config to RadioList options
   const listingTypeOptions = useMemo(
@@ -34,7 +34,7 @@ const SelectListingType = () => {
   return (
     <Controller
       control={control}
-      name="type"
+      name="listingType"
       defaultValue={existingListingType ?? undefined}
       render={({ field }) => (
         <RadioList

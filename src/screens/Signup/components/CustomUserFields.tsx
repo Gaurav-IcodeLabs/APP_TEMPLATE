@@ -40,6 +40,7 @@ const CustomUserFields = ({
           name={fieldProps.name}
           fieldConfig={fieldProps.fieldConfig}
           control={control}
+          fieldType='user'
         />
       ))}
     </View>
