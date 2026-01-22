@@ -2,6 +2,8 @@
 //  FILTER TYPES
 // ----------------------
 
+import { Scope } from "@appTypes/common/types";
+
 // export type SchemaType =
 //   | "category"
 //   | "dates"
@@ -15,7 +17,7 @@ export interface CategoryFilter {
   enabled?: boolean;
   key: string; // "categoryLevel"
   schemaType: 'category';
-  scope: string; // "public"
+  scope: Scope; // "public"
   isNestedEnum: boolean;
   nestedParams: string[]; // ["categoryLevel1", "categoryLevel2", ...]
 }
@@ -25,6 +27,7 @@ export interface DatesFilter {
   key?: string; // "dates"
   schemaType: 'dates';
   label?: string;
+  scope?: Scope; // "public"
   availability?: string; // "time-full"
   dateRangeMode?: string; // "day"
   enabled?: boolean;
@@ -36,6 +39,7 @@ export interface PriceFilter {
   key?: string; // "price"
   schemaType: 'price';
   label?: string;
+  scope?: Scope; // "public"
   min: number;
   max: number;
   step: number;
@@ -46,6 +50,7 @@ export interface KeywordsFilter {
   key: string; // "keywords"
   schemaType: 'keywords';
   label?: string;
+  scope?: Scope; // "public"
 }
 
 // Union of default filters
@@ -79,6 +84,7 @@ export interface ListingTypeFilter {
   key: string; // "listingType"
   schemaType: 'listingType';
   label?: string;
+  scope: Scope;
 }
 
 export interface SeatsFilter {
@@ -86,6 +92,7 @@ export interface SeatsFilter {
   key: string; // "seats"
   schemaType: 'seats';
   label?: string;
+  scope?: Scope;
 }
 
 export interface MainSearch {

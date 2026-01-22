@@ -4,7 +4,7 @@ import {
   CustomUserFieldInputProps,
   UserFieldConfigItem,
 } from '@appTypes/config';
-import { CurrentUser } from '@appTypes/index';
+import { CurrentUser, Scope } from '@appTypes/index';
 import { AppConfig } from '@redux/slices/hostedAssets.slice';
 
 interface PickedFields {
@@ -18,7 +18,7 @@ interface PickedFields {
  * @returns a string containing the namespace prefix and the attribute name
  */
 export const addScopePrefix = (
-  scope: 'private' | 'protected' | 'public' | 'meta',
+  scope: Scope,
   key: string,
 ) => {
   const scopeFnMap = {
@@ -26,6 +26,7 @@ export const addScopePrefix = (
     protected: (k: string) => `prot_${k}`,
     public: (k: string) => `pub_${k}`,
     meta: (k: string) => `meta_${k}`,
+    metadata: (k: string) => `meta_${k}`,
   };
 
   const validKey = key.replace(/\s/g, '_');
@@ -61,7 +62,7 @@ export const pickUserFieldsData = (
     (fields: PickedFields, field: UserFieldConfigItem) => {
       const { key, userTypeConfig, scope = 'public', schemaType } = field || {};
       const namespacedKey = addScopePrefix(
-        scope === 'metadata' ? 'meta' : scope,
+        scope,
         key,
       );
 
@@ -106,7 +107,7 @@ export const initialValuesForUserFields = (
   return userFieldConfigs.reduce((fields, field) => {
     const { key, userTypeConfig, scope = 'public', schemaType } = field || {};
     const namespacedKey = addScopePrefix(
-      scope === 'metadata' ? 'meta' : scope,
+      scope,
       key,
     );
 
@@ -148,7 +149,7 @@ export const getPropsForCustomUserFieldInputs = (
         const { key, userTypeConfig, schemaType, scope, saveConfig } =
           fieldConfig || {};
         const namespacedKey = addScopePrefix(
-          scope === 'metadata' ? 'meta' : scope,
+          scope,
           key,
         );
         // const showField = isSignup ? saveConfig.displayInSignUp : true;

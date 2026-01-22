@@ -100,11 +100,11 @@ const responseApiErrorInfo = (err: ApiErrorResponse) =>
  * @param {Object} data Additional data to be sent to Sentry
  */
 export const error = (
-  e: ApiErrorResponse,
+  e: Error,
   code: string,
   data?: Record<string, any>,
 ) => {
-  const apiErrors = responseApiErrorInfo(e);
+  const apiErrors = responseApiErrorInfo(e as ApiErrorResponse);
   if (appSettings.sentryDsn) {
     const extra = { ...data, apiErrorData: apiErrors };
 

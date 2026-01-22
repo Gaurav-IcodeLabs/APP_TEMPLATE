@@ -35,3 +35,5 @@ export const TIME_SLOT_TIME = 'time-slot/time';
 
 export const DAYS_OF_WEEK = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] as const;
 export type DayOfWeek = typeof DAYS_OF_WEEK[number];
+
+export type Scope = 'private' | 'protected' | 'public' | 'meta' | 'metadata';

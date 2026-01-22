@@ -2,6 +2,8 @@
 // USER CONFIG
 // -----------------------------------------------------------------------------
 
+import { Scope } from "@appTypes/common/types";
+
 // Roles assigned to a user type
 export interface UserRoles {
   provider: boolean;
@@ -99,7 +101,7 @@ export interface UserFieldNumberConfig {
 export interface UserFieldConfigItem {
   key: string;
   // scope: string;
-  scope: 'private' | 'protected' | 'public' | 'meta' | 'metadata';
+  scope: Scope;
   label?: string;
 
   schemaType: UserSchemaType;

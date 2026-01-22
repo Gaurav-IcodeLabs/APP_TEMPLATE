@@ -7,7 +7,7 @@ import {
   getSupportedProcessesInfo,
   isBookingProcessAlias,
 } from '@transactions/transaction';
-import { ImageAsset } from '@appTypes/index';
+import { ImageAsset, Scope } from '@appTypes/index';
 import { Assets } from '@appTypes/api/assets.types';
 import {
   CategoryNode,
@@ -28,6 +28,7 @@ import {
   ListingTypeConfig,
   EnumOption,
   TransactionType,
+  CategoryFilter,
 } from '@appTypes/config';
 
 // Generic helpers for validating config values
@@ -1785,7 +1786,7 @@ const validCategoryConfig = (
   config: { enabled?: boolean } | undefined,
   categoryConfiguration: {
     key: string;
-    scope: string;
+    scope: Scope;
     categoryLevelKeys: string[];
   },
 ): {
@@ -1955,17 +1956,21 @@ const validDefaultFilters = (
   defaultFilters: Array<DefaultFilter>,
   categoryConfiguration: {
     key: string;
-    scope: string;
+    scope?: Scope;
     categoryLevelKeys: string[];
   },
   listingTypeConfig: Array<{ listingType: string; label: string }>,
 ): DefaultFilter[] => {
   const results = defaultFilters.map(data => {
     const schemaType = data.schemaType;
-    if (schemaType === 'category') {
+    if (schemaType === 'category' && categoryConfiguration.scope) {
       const categoryResult = validCategoryConfig(
         data as { enabled?: boolean },
-        categoryConfiguration,
+        {
+          key: categoryConfiguration.key,
+          scope: categoryConfiguration.scope,
+          categoryLevelKeys: categoryConfiguration.categoryLevelKeys,
+        },
       );
       return categoryResult
         ? ({ ...categoryResult, enabled: true } as unknown as DefaultFilter)
@@ -2045,7 +2050,7 @@ const mergeSearchConfig = (
   defaultSearchConfig: SearchConfig,
   categoryConfiguration: {
     key: string;
-    scope: string;
+    scope: Scope;
     categoryLevelKeys: string[];
     categories: CategoryNode[];
   },
