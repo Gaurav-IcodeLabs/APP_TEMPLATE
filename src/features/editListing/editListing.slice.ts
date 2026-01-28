@@ -517,3 +517,33 @@ export const selectFetchListingError = (state: RootState, wizardKey: string) =>
 // Helper selector to check if a editListing wizard is initialized
 export const selectIsRouteInitialized = (state: RootState, wizardKey: string) =>
   !!selectRouteEntity(state, wizardKey);
+
+/**
+ * Determine if this is a new listing flow (new or draft).
+ * In web-template: isNewListingFlow = isNewURI || isDraftURI
+ * - New listings: no listingId → isNewListing = true
+ * - Draft listings: have listingId but state === 'draft' → isNewListing = true (treated as new listing flow)
+ * - Published listings: have listingId and state !== 'draft' → isNewListing = false (edit mode)
+ *
+ * @param state - Root state
+ * @param wizardKey - Wizard key for the edit listing flow
+ * @param listingId - Optional listing ID from route params
+ * @returns true if this is a new listing flow (new or draft), false if editing published listing
+ */
+export const selectIsNewListingFlow = (
+  state: RootState,
+  wizardKey: string,
+  listingId: string | undefined,
+): boolean => {
+  // If no listingId, it's definitely a new listing
+  if (!listingId) {
+    return true;
+  }
+
+  // Check if the current listing is in draft state
+  const currentListing = selectCurrentListing(state, wizardKey);
+  const listingState = currentListing?.attributes?.state;
+  
+  // If listing state is 'draft', treat it as new listing flow
+  return listingState === 'draft';
+};

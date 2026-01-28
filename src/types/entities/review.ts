@@ -9,6 +9,7 @@ export type ReviewRating = typeof REVIEW_RATINGS[number];
 // A review on a user
 export interface Review {
   id: UUID;
+  type: 'review';
   attributes: {
     createdAt: Date;
     content?: string;

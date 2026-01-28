@@ -1,3 +1,9 @@
+import {
+  EnumOption,
+  ListingField,
+  UserFieldConfigItem,
+} from '@appTypes/config';
+import { Entity, Listing, User } from '@appTypes/index';
 import { extractYouTubeID } from './string';
 
 /**
@@ -19,26 +25,33 @@ const ESCAPE_TEXT_REPLACEMENTS = {
 
 // An example how you could sanitize text content.
 // This swaps some coding related characters to less dangerous ones
-const sanitizeText = str =>
+const sanitizeText = (str: any) =>
   str == null
     ? str
     : typeof str === 'string'
-    ? str.replace(ESCAPE_TEXT_REGEXP, ch => ESCAPE_TEXT_REPLACEMENTS[ch])
+    ? str.replace(
+        ESCAPE_TEXT_REGEXP,
+        ch =>
+          ESCAPE_TEXT_REPLACEMENTS[ch as keyof typeof ESCAPE_TEXT_REPLACEMENTS],
+      )
     : '';
 
 // Enum and multi-enum work with predefined option configuration
-const sanitizeEnum = (str, options) => (options.map(o => `${o.option}`).includes(str) ? str : null);
-const sanitizeMultiEnum = (arr, options) =>
+const sanitizeEnum = (str: string, options: EnumOption[]) =>
+  options.map(o => `${o.option}`).includes(str) ? str : null;
+const sanitizeMultiEnum = (arr: string | string[], options: EnumOption[]) =>
   Array.isArray(arr)
     ? arr.reduce((ret, value) => {
         const enumValue = sanitizeEnum(value, options);
         return enumValue ? [...ret, enumValue] : ret;
-      }, [])
+      }, [] as string[])
     : [];
-const sanitizeLong = lng => (lng == null || typeof lng === 'number' ? lng : null);
-const sanitizeBoolean = bool => (bool == null || typeof bool === 'boolean' ? bool : null);
+const sanitizeLong = (lng: any) =>
+  lng == null || typeof lng === 'number' ? lng : null;
+const sanitizeBoolean = (bool: any) =>
+  bool == null || typeof bool === 'boolean' ? bool : null;
 
-const sanitizeYoutubeVideoUrl = url => {
+const sanitizeYoutubeVideoUrl = (url: string) => {
   const sanitizedUrl = sanitizeUrl(url);
   const videoID = extractYouTubeID(sanitizedUrl);
   return videoID ? `https://www.youtube.com/watch?v=${videoID}` : null;
@@ -49,22 +62,23 @@ const sanitizeYoutubeVideoUrl = url => {
 // <sanitizeUrl>
 const INVALID_PROTOCOL_REGEXP = /^([^\w]*)(javascript|data|vbscript)/im;
 const HTML_ENTITIES_REGEXP = /&#(\w+)(^\w|;)?/g;
-const CTRL_CHARACTERS_REGEXP = /[\u0000-\u001F\u007F-\u009F\u2000-\u200D\uFEFF]/gim;
+const CTRL_CHARACTERS_REGEXP =
+  /[\u0000-\u001F\u007F-\u009F\u2000-\u200D\uFEFF]/gim;
 const URL_SCHEME_REGEXP = /^([^:]+):/gm;
 const RELATIVE_FIRST_CHARACTERS = ['.', '/'];
 
-function isRelativeUrlWithoutProtocol(url) {
+function isRelativeUrlWithoutProtocol(url: string) {
   return RELATIVE_FIRST_CHARACTERS.indexOf(url[0]) > -1;
 }
 
 // adapted from https://stackoverflow.com/a/29824550/2601552
-function decodeHtmlCharacters(str) {
+function decodeHtmlCharacters(str: string) {
   return str.replace(HTML_ENTITIES_REGEXP, (match, dec) => {
     return String.fromCharCode(dec);
   });
 }
 
-export function sanitizeUrl(url) {
+export function sanitizeUrl(url: string) {
   const sanitizedUrl = decodeHtmlCharacters(url || '')
     .replace(CTRL_CHARACTERS_REGEXP, '')
     .trim();
@@ -100,18 +114,30 @@ export function sanitizeUrl(url) {
  * but if you use this data on props, it might create XSS vulnerabilities
  * E.g. you should sanitize and encode URI if you are creating links from public data.
  */
-export const sanitizeUser = (entity, config = {}) => {
+export const sanitizeUser = (entity: User, config = {}) => {
   const { attributes, ...restEntity } = entity || {};
-  const { profile, ...restAttributes } = attributes || {};
-  const { bio, displayName, abbreviatedName, publicData = {}, metadata = {}, ...restProfile } =
-    profile || {};
+  const { profile, ...restAttributes } = {
+    ...(attributes || {}),
+    profile: 'profile' in attributes ? attributes.profile : undefined,
+  };
+  const {
+    bio,
+    displayName,
+    abbreviatedName,
+    publicData = {},
+    metadata = {},
+    ...restProfile
+  } = profile || {};
 
-  const sanitizePublicData = publicData => {
+  const sanitizePublicData = (publicData: Record<string, any>) => {
     // TODO: If you add public data, you should probably sanitize it here.
-    const sanitizedConfiguredPublicData = sanitizeConfiguredPublicData(publicData, config);
+    const sanitizedConfiguredPublicData = sanitizeConfiguredPublicData(
+      publicData,
+      config,
+    );
     return publicData ? { publicData: sanitizedConfiguredPublicData } : {};
   };
-  const sanitizeMetadata = metadata => {
+  const sanitizeMetadata = (metadata: Record<string, any>) => {
     // TODO: If you add user-generated metadata through Integration API,
     // you should probably sanitize it here.
     return metadata ? { metadata } : {};
@@ -129,7 +155,9 @@ export const sanitizeUser = (entity, config = {}) => {
         },
       }
     : {};
-  const attributesMaybe = attributes ? { attributes: { ...profileMaybe, ...restAttributes } } : {};
+  const attributesMaybe = attributes
+    ? { attributes: { ...profileMaybe, ...restAttributes } }
+    : {};
 
   return { ...attributesMaybe, ...restEntity };
 };
@@ -140,15 +168,18 @@ export const sanitizeUser = (entity, config = {}) => {
  * @param {object} config containing "schemaType"
  * @returns sanitized value or null
  */
-const sanitizedExtendedDataFields = (value, config) => {
+const sanitizedExtendedDataFields = (
+  value: any,
+  config: { schemaType: string; enumOptions?: EnumOption[] },
+) => {
   const { schemaType, enumOptions } = config;
   const sanitized =
     schemaType === 'text'
       ? sanitizeText(value)
       : schemaType === 'enum'
-      ? sanitizeEnum(value, enumOptions)
+      ? sanitizeEnum(value, enumOptions || [])
       : schemaType === 'multi-enum'
-      ? sanitizeMultiEnum(value, enumOptions)
+      ? sanitizeMultiEnum(value, enumOptions || [])
       : schemaType === 'long'
       ? sanitizeLong(value)
       : schemaType === 'boolean'
@@ -171,12 +202,20 @@ const sanitizedExtendedDataFields = (value, config) => {
  * @param {*} config
  * @returns
  */
-const sanitizeConfiguredPublicData = (publicData, config = {}) => {
+const sanitizeConfiguredPublicData = (
+  publicData: Record<string, any>,
+  config: {
+    listingFields?: ListingField[];
+    userFields?: UserFieldConfigItem[];
+  } = {},
+) => {
   // The publicData could be null (e.g. for banned user)
   const publicDataObj = publicData || {};
   return Object.entries(publicDataObj).reduce((sanitized, entry) => {
     const [key, value] = entry;
-    const foundListingFieldConfig = config?.listingFields?.find(d => d.key === key);
+    const foundListingFieldConfig = config?.listingFields?.find(
+      d => d.key === key,
+    );
     const foundUserFieldConfig = config?.userFields?.find(d => d.key === key);
     const knownKeysWithString = [
       'listingType',
@@ -209,23 +248,39 @@ const sanitizeConfiguredPublicData = (publicData, config = {}) => {
  * but if you use this data on props, it might create XSS vulnerabilities
  * E.g. you should sanitize and encode URI if you are creating links from public data.
  */
-export const sanitizeListing = (entity, config = {}) => {
+export const sanitizeListing = (
+  entity: Listing,
+  config: {
+    listingFields?: ListingField[];
+    userFields?: UserFieldConfigItem[];
+  } = {},
+) => {
   const { attributes, ...restEntity } = entity;
-  const { title, description, publicData, ...restAttributes } = attributes || {};
+  const { title, description, publicData, ...restAttributes } =
+    attributes || {};
 
-  const sanitizeLocation = location => {
+  const sanitizeLocation = (
+    location: { address: string; building: string } | undefined,
+  ) => {
     const { address, building } = location || {};
     return { address: sanitizeText(address), building: sanitizeText(building) };
   };
 
-  const sanitizePublicData = publicData => {
+  const sanitizePublicData = (publicData: Record<string, any> | undefined) => {
     // Here's an example how you could sanitize location and rules from publicData:
     // TODO: If you add public data, you should probably sanitize it here.
     const { location, ...restPublicData } = publicData || {};
-    const locationMaybe = location ? { location: sanitizeLocation(location) } : {};
-    const sanitizedConfiguredPublicData = sanitizeConfiguredPublicData(restPublicData, config);
+    const locationMaybe = location
+      ? { location: sanitizeLocation(location) }
+      : {};
+    const sanitizedConfiguredPublicData = sanitizeConfiguredPublicData(
+      restPublicData,
+      config,
+    );
 
-    return publicData ? { publicData: { ...locationMaybe, ...sanitizedConfiguredPublicData } } : {};
+    return publicData
+      ? { publicData: { ...locationMaybe, ...sanitizedConfiguredPublicData } }
+      : {};
   };
 
   const attributesMaybe = attributes
@@ -242,11 +297,19 @@ export const sanitizeListing = (entity, config = {}) => {
   return { ...attributesMaybe, ...restEntity };
 };
 
+type SanitizeConfig = {
+  listingFields?: ListingField[];
+  userFields?: UserFieldConfigItem[];
+};
+
 /**
  * Sanitize entities if needed.
  * Remember to add your own sanitization rules for your extended data
  */
-export const sanitizeEntity = (entity, config) => {
+export function sanitizeEntity<T extends Entity>(
+  entity: T,
+  config: SanitizeConfig = {},
+) {
   const { type } = entity;
   switch (type) {
     case 'listing':
@@ -256,4 +319,4 @@ export const sanitizeEntity = (entity, config) => {
     default:
       return entity;
   }
-};
+}

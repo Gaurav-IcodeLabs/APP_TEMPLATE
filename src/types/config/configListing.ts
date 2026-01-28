@@ -49,7 +49,7 @@ export type ListingTypes = ListingType[];
 // LISTING FIELDS
 // -----------------------------------------------------------------------------
 
-export type SchemaType = 'enum' | 'multi-enum' | 'text' | 'long';
+export type SchemaType = 'enum' | 'multi-enum' | 'text' | 'long' | 'boolean' | 'youtubeVideoUrl';
 
 export interface EnumOption {
   label: string;

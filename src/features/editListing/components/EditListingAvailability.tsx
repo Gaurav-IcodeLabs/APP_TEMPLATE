@@ -1,11 +1,21 @@
 import React, { useRef, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useFormContext, useWatch } from 'react-hook-form';
-import { EditListingForm, AvailabilityException } from '../types/editListingForm.type';
+import {
+  EditListingForm,
+  AvailabilityException,
+} from '../types/editListingForm.type';
 import { useIsShowAvailability } from '../hooks/useIsShowAvailability';
-import { AvailabilityModal, AvailabilityExceptionModal, AvailabilityModalImperativeHandle } from './availability';
+import {
+  AvailabilityModal,
+  AvailabilityExceptionModal,
+  AvailabilityModalImperativeHandle,
+} from './availability';
 import { showDeleteConfirmAlert } from '@util/alertHelpers';
 import { formatExceptionDate } from '@util/dateHelpers';
+import { useTypedSelector } from '@redux/store';
+import { selectCurrentListing } from '../editListing.slice';
+import { useEditListingWizardRoute } from '../editListing.helper';
 
 const WEEKDAYS = [
   { key: 'mon', label: 'Monday' },
@@ -19,30 +29,41 @@ const WEEKDAYS = [
 
 /**
  * EditListingAvailability Component
- * 
+ *
  * Allows providers to set their weekly availability schedule for calendar bookings.
  */
 const EditListingAvailability: React.FC = () => {
   const isShowAvailability = useIsShowAvailability();
   const { control, setValue, getValues } = useFormContext<EditListingForm>();
   const [isModalVisible, setIsModalVisible] = useState(false);
+  const { wizardKey } = useEditListingWizardRoute().params;
+  const hasAvailabilityPlan = useTypedSelector(
+    state =>
+      !!selectCurrentListing(state, wizardKey)?.attributes.availabilityPlan,
+  );
   const [isExceptionModalVisible, setIsExceptionModalVisible] = useState(false);
-  const availabilityModalRef = useRef<AvailabilityModalImperativeHandle | null>(null);
+  const availabilityModalRef = useRef<AvailabilityModalImperativeHandle | null>(
+    null,
+  );
   const { isScheduleExists, availabilityTimezone, exceptions } = useWatch({
     control,
     name: 'availabilityPlan',
     compute: (data: EditListingForm['availabilityPlan']) => ({
-      isScheduleExists: data?.entries.length && data?.entries.length > 0 || data?.timezone ? true : false,
+      isScheduleExists:
+        (data?.entries.length && data?.entries.length > 0) || data?.timezone
+          ? true
+          : false,
       availabilityTimezone: data?.timezone,
-      exceptions: data?.exceptions || []
-    })
+      exceptions: data?.exceptions || [],
+    }),
   });
   // Don't show if availability is not enabled for this listing type
   if (!isShowAvailability) {
     return null;
   }
 
-  const timezone = availabilityTimezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const timezone =
+    availabilityTimezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
 
   const handleOpenModal = () => {
     // Don't initialize form values here - let the modal handle it with local state
@@ -53,7 +74,7 @@ const EditListingAvailability: React.FC = () => {
   const handleSaveException = (exception: AvailabilityException) => {
     const currentPlan = getValues('availabilityPlan');
     const currentExceptions = currentPlan?.exceptions || [];
-    
+
     setValue('availabilityPlan', {
       ...currentPlan!,
       exceptions: [...currentExceptions, exception],
@@ -67,24 +88,32 @@ const EditListingAvailability: React.FC = () => {
       () => {
         const currentPlan = getValues('availabilityPlan');
         const currentExceptions = currentPlan?.exceptions || [];
-        const newExceptions = currentExceptions.filter((_: AvailabilityException, i: number) => i !== index);
-        
+        const newExceptions = currentExceptions.filter(
+          (_: AvailabilityException, i: number) => i !== index,
+        );
+
         setValue('availabilityPlan', {
           ...currentPlan!,
           exceptions: newExceptions,
         });
-      }
+      },
     );
   };
 
   return (
     <View style={styles.container}>
       <Text style={styles.sectionTitle}>Availability</Text>
-      <Text style={styles.description}>
-        When is this listing available for booking? Start by setting a default weekly schedule.
-      </Text>
+      {!hasAvailabilityPlan ? (
+        <Text style={styles.description}>
+          When is this listing available for booking? Start by setting a default
+          weekly schedule.
+        </Text>
+      ) : null}
 
-      <TouchableOpacity style={styles.setScheduleButton} onPress={handleOpenModal}>
+      <TouchableOpacity
+        style={styles.setScheduleButton}
+        onPress={handleOpenModal}
+      >
         <Text style={styles.setScheduleButtonText}>
           {isScheduleExists ? 'Edit default schedule' : 'Set default schedule'}
         </Text>
@@ -92,11 +121,13 @@ const EditListingAvailability: React.FC = () => {
 
       {isScheduleExists && (
         <>
-          <TouchableOpacity 
-            style={[styles.setScheduleButton, styles.exceptionButton]} 
+          <TouchableOpacity
+            style={[styles.setScheduleButton, styles.exceptionButton]}
             onPress={() => setIsExceptionModalVisible(true)}
           >
-            <Text style={styles.setScheduleButtonText}>Add an availability exception</Text>
+            <Text style={styles.setScheduleButtonText}>
+              Add an availability exception
+            </Text>
           </TouchableOpacity>
 
           {exceptions.length > 0 && (
@@ -106,13 +137,18 @@ const EditListingAvailability: React.FC = () => {
                 <View key={index} style={styles.exceptionItem}>
                   <View style={styles.exceptionInfo}>
                     <Text style={styles.exceptionText}>
-                      {formatExceptionDate(exception.start)} - {formatExceptionDate(exception.end)}
+                      {formatExceptionDate(exception.start)} -{' '}
+                      {formatExceptionDate(exception.end)}
                     </Text>
                     <Text style={styles.exceptionSeats}>
-                      {exception.seats === 0 ? 'Unavailable' : `${exception.seats} seat${exception.seats !== 1 ? 's' : ''}`}
+                      {exception.seats === 0
+                        ? 'Unavailable'
+                        : `${exception.seats} seat${
+                            exception.seats !== 1 ? 's' : ''
+                          }`}
                     </Text>
                   </View>
-                  <TouchableOpacity 
+                  <TouchableOpacity
                     onPress={() => handleDeleteException(index)}
                     style={styles.deleteExceptionButton}
                   >
@@ -141,9 +177,6 @@ const EditListingAvailability: React.FC = () => {
     </View>
   );
 };
-
-
-
 
 const styles = StyleSheet.create({
   container: {

@@ -5,11 +5,11 @@ import {
 } from '@components/index';
 import { useConfiguration } from '@context/configurationContext';
 import { Controller, useFormContext, useWatch } from 'react-hook-form';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { useEditListingWizardRoute } from '../editListing.helper';
 import { useIsCompatibleCurrency } from '../hooks/useIsCompatibleCurrency';
-import { useIsShowPricing } from '../hooks/useIsShowPricing';
 import { useIsPriceVariationsEnabled } from '../hooks/useIsPriceVariationsEnabled';
+import { useIsShowPricing } from '../hooks/useIsShowPricing';
 import { EditListingForm } from '../types/editListingForm.type';
 
 const START_TIME_INTERVAL_OPTIONS = [

@@ -14,6 +14,7 @@ export const colors = {
   placeholder: '#949494',
   red: '#FF0000',
   errorRed: '#D03739',
+  success: '#34C759',
 };
 
 export type AppColors = typeof colors;

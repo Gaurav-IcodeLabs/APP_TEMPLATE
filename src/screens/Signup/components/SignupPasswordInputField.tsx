@@ -13,6 +13,7 @@ export const SignupPasswordInputField: React.FC<Props> = ({ control }) => {
       name="password"
       labelKey="PassWord"
       placeholder="Enter your password"
+      isPassword
     />
   );
 };

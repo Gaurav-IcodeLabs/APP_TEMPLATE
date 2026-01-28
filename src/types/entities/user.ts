@@ -8,6 +8,8 @@ export interface UserAttributes {
     displayName?: string;
     abbreviatedName?: string;
     bio?: string;
+    publicData?: Record<string, any>;
+    metadata?: Record<string, any>;
   };
 }
 
@@ -16,6 +18,8 @@ export interface AuthorAttributes {
     displayName?: string;
     abbreviatedName?: string;
     bio?: string;
+    publicData?: Record<string, any>;
+    metadata?: Record<string, any>;
   };
 }
 

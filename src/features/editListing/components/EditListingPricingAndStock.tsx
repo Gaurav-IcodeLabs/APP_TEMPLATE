@@ -1,7 +1,7 @@
-import { CheckBox, CommonTextInput } from '@components/index';
+import { CommonTextInput } from '@components/index';
 import { useConfiguration } from '@context/configurationContext';
-import { Controller, useFormContext, useWatch } from 'react-hook-form';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useFormContext, useWatch } from 'react-hook-form';
+import { StyleSheet, Text, View } from 'react-native';
 import { useEditListingWizardRoute } from '../editListing.helper';
 import { useIsCompatibleCurrency } from '../hooks/useIsCompatibleCurrency';
 import { useIsShowPricing } from '../hooks/useIsShowPricing';

@@ -9,6 +9,7 @@ export * from './entities/booking';
 export * from './entities/transaction';
 export * from './entities/review';
 export * from './entities/stripe';
+export * from './entities';
 
 // API types
 export * from './api/api.types';

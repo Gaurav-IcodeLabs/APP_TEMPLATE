@@ -1,6 +1,13 @@
+import {
+  Entity,
+  MarketplaceApiSuccessResponse,
+  Resource,
+  ResourceType,
+  SuccessResponseData,
+} from '@appTypes/index';
 import isArray from 'lodash/isArray';
 import reduce from 'lodash/reduce';
-import { sanitizeEntity } from '../util/sanitize';
+import { sanitizeEntity } from './sanitize';
 // NOTE: This file imports sanitize.js, which may lead to circular dependency
 
 /**
@@ -8,7 +15,10 @@ import { sanitizeEntity } from '../util/sanitize';
  *
  * See: http://jsonapi.org/format/#document-resource-object-relationships
  */
-export const combinedRelationships = (oldRels, newRels) => {
+export const combinedRelationships = (
+  oldRels: Record<string, any> | undefined,
+  newRels: Record<string, any> | undefined,
+) => {
   if (!oldRels && !newRels) {
     // Special case to avoid adding an empty relationships object when
     // none of the resource objects had any relationships.
@@ -22,17 +32,31 @@ export const combinedRelationships = (oldRels, newRels) => {
  *
  * See: http://jsonapi.org/format/#document-resource-objects
  */
-export const combinedResourceObjects = (oldRes, newRes) => {
+export const combinedResourceObjects = <T extends ResourceType>(
+  oldRes: Resource<T>,
+  newRes: Resource<T>,
+) => {
   const { id, type } = oldRes;
-  if (newRes.id.uuid !== id.uuid || newRes.type !== type) {
-    throw new Error('Cannot merge resource objects with different ids or types');
+  if (
+    (typeof newRes.id === 'string' ? newRes.id : (newRes.id as any).uuid) !==
+      (typeof id === 'string' ? id : (id as any).uuid) ||
+    newRes.type !== type
+  ) {
+    throw new Error(
+      'Cannot merge resource objects with different ids or types',
+    );
   }
   const attributes = newRes.attributes || oldRes.attributes;
   const attributesOld = oldRes.attributes || {};
   const attributesNew = newRes.attributes || {};
   // Allow (potentially) sparse attributes to update only relevant fields
-  const attrs = attributes ? { attributes: { ...attributesOld, ...attributesNew } } : null;
-  const relationships = combinedRelationships(oldRes.relationships, newRes.relationships);
+  const attrs = attributes
+    ? { attributes: { ...attributesOld, ...attributesNew } }
+    : null;
+  const relationships = combinedRelationships(
+    oldRes.relationships,
+    newRes.relationships,
+  );
   const rels = relationships ? { relationships } : null;
   return { id, type, ...attrs, ...rels };
 };
@@ -41,7 +65,11 @@ export const combinedResourceObjects = (oldRes, newRes) => {
  * Combine the resource objects form the given api response to the
  * existing entities.
  */
-export const updatedEntities = (oldEntities, apiResponse, sanitizeConfig = {}) => {
+export const updatedEntities = (
+  oldEntities: Entity | {},
+  apiResponse: SuccessResponseData,
+  sanitizeConfig = {},
+) => {
   const { data, included = [] } = apiResponse;
   const objects = (Array.isArray(data) ? data : [data]).concat(included);
 
@@ -54,7 +82,9 @@ export const updatedEntities = (oldEntities, apiResponse, sanitizeConfig = {}) =
 
     entities[type] = entities[type] || {};
     const entity = entities[type][id.uuid];
-    entities[type][id.uuid] = entity ? combinedResourceObjects({ ...entity }, current) : current;
+    entities[type][id.uuid] = entity
+      ? combinedResourceObjects({ ...entity }, current)
+      : current;
 
     return entities;
   }, oldEntities);
@@ -77,17 +107,33 @@ export const updatedEntities = (oldEntities, apiResponse, sanitizeConfig = {}) =
  * @return {Array} the given resource objects denormalised that were
  * found in the entities
  */
-export const denormalisedEntities = (entities, resources, throwIfNotFound = true) => {
+export const denormalisedEntities = (
+  entities: Entity,
+  resources: Resource[],
+  throwIfNotFound = true,
+) => {
   const denormalised = resources.map(res => {
     const { id, type } = res;
-    const entityFound = entities[type] && id && entities[type][id.uuid];
+    const entityFound =
+      entities[type as keyof Entity] &&
+      id &&
+      entities[type as keyof Entity][
+        typeof id === 'string' ? id : (id as any).uuid
+      ];
     if (!entityFound) {
       if (throwIfNotFound) {
-        throw new Error(`Entity with type "${type}" and id "${id ? id.uuid : id}" not found`);
+        throw new Error(
+          `Entity with type "${type}" and id "${
+            id ? (typeof id === 'string' ? id : (id as any).uuid) : id
+          }" not found`,
+        );
       }
       return null;
     }
-    const entity = entities[type][id.uuid];
+    const entity =
+      entities[type as keyof Entity][
+        typeof id === 'string' ? id : (id as any).uuid
+      ];
     const { relationships, ...entityData } = entity;
 
     if (relationships) {
@@ -112,7 +158,7 @@ export const denormalisedEntities = (entities, resources, throwIfNotFound = true
           }
           return ent;
         },
-        entityData
+        entityData,
       );
     }
     return entityData;
@@ -128,7 +174,9 @@ export const denormalisedEntities = (entities, resources, throwIfNotFound = true
  * @return {Array} entities in the response with relationships
  * denormalised from the included data
  */
-export const denormalisedResponseEntities = sdkResponse => {
+export const denormalisedResponseEntities = (
+  sdkResponse: MarketplaceApiSuccessResponse,
+) => {
   const apiResponse = sdkResponse.data;
   const data = apiResponse.data;
   const resources = Array.isArray(data) ? data : [data];
@@ -170,10 +218,13 @@ const denormalizeJsonData = (data, included) => {
     Object.entries(data).forEach(([key, value]) => {
       // Handle denormalization of image reference
       const hasImageRefAsValue =
-        typeof value == 'object' && value?._ref?.type === 'imageAsset' && value?._ref?.id;
+        typeof value == 'object' &&
+        value?._ref?.type === 'imageAsset' &&
+        value?._ref?.id;
       // If there is no image included,
       // the _ref might contain parameters for image resolver (Asset Delivery API resolves image URLs on the fly)
-      const hasUnresolvedImageRef = typeof value == 'object' && value?._ref?.resolver === 'image';
+      const hasUnresolvedImageRef =
+        typeof value == 'object' && value?._ref?.resolver === 'image';
 
       if (hasImageRefAsValue) {
         const foundRef = included.find(inc => inc.id === value._ref?.id);
@@ -207,7 +258,12 @@ export const denormalizeAssetData = assetJson => {
  *
  * @param {Object} transaction entity object, which is to be ensured against null values
  */
-export const ensureTransaction = (transaction, booking = null, listing = null, provider = null) => {
+export const ensureTransaction = (
+  transaction,
+  booking = null,
+  listing = null,
+  provider = null,
+) => {
   const empty = {
     id: null,
     type: 'transaction',
@@ -275,7 +331,12 @@ export const ensureUser = user => {
  * @param {Object} current user entity object, which is to be ensured against null values
  */
 export const ensureCurrentUser = user => {
-  const empty = { id: null, type: 'currentUser', attributes: { profile: {} }, profileImage: {} };
+  const empty = {
+    id: null,
+    type: 'currentUser',
+    attributes: { profile: {} },
+    profileImage: {},
+  };
   return { ...empty, ...user };
 };
 
@@ -373,7 +434,7 @@ export const userDisplayNameAsString = (user, defaultUserDisplayName) => {
 export const userDisplayName = (user, bannedUserDisplayName) => {
   console.warn(
     `Function userDisplayName is deprecated!
-User function userDisplayNameAsString or component UserDisplayName instead.`
+User function userDisplayNameAsString or component UserDisplayName instead.`,
   );
 
   return userDisplayNameAsString(user, bannedUserDisplayName);
@@ -423,7 +484,14 @@ export const userAbbreviatedName = (user, defaultUserAbbreviatedName) => {
  * otherwise undefined is returned, which results in mergeWith using the
  * standard merging function
  */
-export const overrideArrays = (objValue, srcValue, key, object, source, stack) => {
+export const overrideArrays = (
+  objValue,
+  srcValue,
+  key,
+  object,
+  source,
+  stack,
+) => {
   if (isArray(objValue)) {
     return srcValue;
   }
