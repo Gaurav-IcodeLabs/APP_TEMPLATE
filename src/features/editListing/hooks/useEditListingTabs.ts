@@ -83,7 +83,7 @@ export const useEditListingTabs = ({
   // Determine which tabs to show based on listing type and process
   const tabs = useMemo(() => {
     if (!listingType || !config) {
-      return [DETAILS]; // Show only details tab initially
+      return [DETAILS] as TabType[]; // Show only details tab initially
     }
 
     const listingTypeConfig = config.listing?.listingTypes?.find(
@@ -91,7 +91,7 @@ export const useEditListingTabs = ({
     );
 
     if (!listingTypeConfig) {
-      return [DETAILS];
+      return [DETAILS] as TabType[];
     }
 
     // Get process name from transaction type
@@ -127,7 +127,7 @@ export const useEditListingTabs = ({
       [STYLE]: null,
     };
 
-    return tabs.map(tab => components[tab]).filter(Boolean) as React.ComponentType[];
+    return tabs.map(tab => components[tab as TabType]).filter(Boolean) as React.ComponentType[];
   }, [tabs]);
 
   // Track active tab index
@@ -158,27 +158,26 @@ export const useEditListingTabs = ({
     const completedStates = tabs.reduce(
       (acc, tab) => ({
         ...acc,
-        [tab]: tabCompleted(tab, minimalFormData, config),
+        [tab]: tabCompleted(tab as TabType, minimalFormData, config),
       }),
       {} as Record<TabType, boolean>,
     );
 
     return tabs.map((tab, index) => {
       const labelAndSubmit = tabLabelAndSubmit(
-        tab,
+        tab as TabType,
         isNewListing,
         isPriceDisabled,
-        processName,
       );
       return {
-        tab,
+        tab: tab as TabType,
         label: labelAndSubmit.label,
-        isActive: activeStates[tab] ?? false,
-        isCompleted: completedStates[tab] ?? false,
-        isDisabled: !(activeStates[tab] ?? false),
+        isActive: activeStates[tab as TabType] ?? false,
+        isCompleted: completedStates[tab as TabType] ?? false,
+        isDisabled: !(activeStates[tab as TabType] ?? false),
       };
     });
-  }, [tabs, minimalFormData, isNewListing, config, isPriceDisabled, processName]);
+  }, [tabs, minimalFormData, isNewListing, config, isPriceDisabled]);
 
   // Handle tab chip press
   const handleTabPress = useCallback(

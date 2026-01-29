@@ -2,7 +2,7 @@ import { Listing } from '@appTypes/index';
 import { Button } from '@components/index';
 import { useConfiguration } from '@context/configurationContext';
 import { useAppDispatch, useTypedSelector } from '@redux/store';
-import useLazyLoadingTabs from 'hooks/useLazyLoadingTabs';
+import useLazyLoadingTabs from '../../../hooks/useLazyLoadingTabs';
 import React, { useCallback, useRef } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 import {
@@ -68,6 +68,47 @@ const EditListing = () => {
     },
   });
 
+  return (
+    <FormProvider {...formMethods}>
+      <EditListingContent
+        wizardKey={wizardKey}
+        listingId={listingId}
+        isNewListing={isNewListing}
+        createListingInProgress={createListingInProgress}
+        width={width}
+        flatListRef={flatListRef}
+        formMethods={formMethods}
+        dispatch={dispatch}
+        config={config}
+      />
+    </FormProvider>
+  );
+};
+
+// Separate component that uses form context
+interface EditListingContentProps {
+  wizardKey: string;
+  listingId: string | undefined;
+  isNewListing: boolean;
+  createListingInProgress: boolean;
+  width: number;
+  flatListRef: React.RefObject<FlatList | null>;
+  formMethods: any;
+  dispatch: any;
+  config: any;
+}
+
+const EditListingContent: React.FC<EditListingContentProps> = ({
+  wizardKey,
+  listingId,
+  isNewListing,
+  createListingInProgress,
+  width,
+  flatListRef,
+  formMethods,
+  dispatch,
+  config,
+}) => {
   // Use custom hook for tab logic (only watches specific fields, not entire form)
   const {
     tabs,
@@ -183,50 +224,48 @@ const EditListing = () => {
   };
 
   return (
-    <FormProvider {...formMethods}>
-      <View style={styles.container}>
-        <TabChipsContainer
-          tabs={tabStates}
-          onTabPress={handleTabPress}
-          activeTabIndex={activeTabIndex}
-        />
-        <FlatList
-          ref={flatListRef}
-          data={lazyTabsData}
-          renderItem={renderTabItem}
-          keyExtractor={(_, index) => `tab-${index}`}
-          horizontal
-          pagingEnabled
-          showsHorizontalScrollIndicator={false}
-          scrollEnabled={true}
-          onMomentumScrollEnd={handleMomentumScrollEnd}
-          getItemLayout={getItemLayout}
-          viewabilityConfigCallbackPairs={
-            viewabilityConfigCallbackPairs.current
-          }
-          onScrollToIndexFailed={info => {
-            // Handle scroll to index failure
-            setTimeout(() => {
-              flatListRef.current?.scrollToIndex({
-                index: info.index,
-                animated: true,
-              });
-            }, 500);
-          }}
-        />
-        {isNewListing && activeTabIndex === tabs.length - 1 && (
-          <View style={styles.publishButtonContainer}>
-            <Button
-              title="Publish listing"
-              onPress={handlePublishListing}
-              loader={createListingInProgress}
-              disabled={createListingInProgress}
-              style={styles.publishButton}
-            />
-          </View>
-        )}
-      </View>
-    </FormProvider>
+    <View style={styles.container}>
+      <TabChipsContainer
+        tabs={tabStates}
+        onTabPress={handleTabPress}
+        activeTabIndex={activeTabIndex}
+      />
+      <FlatList
+        ref={flatListRef}
+        data={lazyTabsData}
+        renderItem={renderTabItem}
+        keyExtractor={(_, index) => `tab-${index}`}
+        horizontal
+        pagingEnabled
+        showsHorizontalScrollIndicator={false}
+        scrollEnabled={true}
+        onMomentumScrollEnd={handleMomentumScrollEnd}
+        getItemLayout={getItemLayout}
+        viewabilityConfigCallbackPairs={
+          viewabilityConfigCallbackPairs.current
+        }
+        onScrollToIndexFailed={info => {
+          // Handle scroll to index failure
+          setTimeout(() => {
+            flatListRef.current?.scrollToIndex({
+              index: info.index,
+              animated: true,
+            });
+          }, 500);
+        }}
+      />
+      {isNewListing && activeTabIndex === tabs.length - 1 && (
+        <View style={styles.publishButtonContainer}>
+          <Button
+            title="Publish listing"
+            onPress={handlePublishListing}
+            loader={createListingInProgress}
+            disabled={createListingInProgress}
+            style={styles.publishButton}
+          />
+        </View>
+      )}
+    </View>
   );
 };
 
